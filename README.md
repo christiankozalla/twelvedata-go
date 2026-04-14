@@ -190,6 +190,23 @@ func main() {
 
 The client returns `APIError` when Twelve Data responds with an API-level error payload, including cases where the HTTP status is `200` but the JSON body contains `"status": "error"`.
 
+## Changelog and releases
+
+This repository uses Release Please to automate changelog and release preparation.
+
+Flow:
+1. Merge commits into `main`.
+2. The Release Please workflow opens or updates a Release PR.
+3. The Release PR updates `CHANGELOG.md`, release metadata, and version manifest.
+4. Merging the Release PR creates the git tag and GitHub release.
+
+To keep changelog entries useful for consumers, prefer conventional commit messages:
+- `feat:` user-facing functionality
+- `fix:` bug fixes
+- `perf:` performance improvements
+- `docs:` documentation-only changes
+- `chore:` maintenance and tooling
+
 ## Extending the client
 
 New endpoints should follow the existing pattern:
