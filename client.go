@@ -796,6 +796,57 @@ func (c *Client) IncomeStatement(params IncomeStatementParams) *Request {
 	return c.newRequest("/income_statement", values)
 }
 
+// LastChangesParams enumerates filters for /last_change/{endpoint}.
+type LastChangesParams struct {
+	Endpoint   string
+	StartDate  string
+	Symbol     string
+	Exchange   string
+	MICCode    string
+	Country    string
+	Page       *int
+	OutputSize *int
+}
+
+// LastChangesResponse captures the /last_change/{endpoint} response.
+type LastChangesResponse struct {
+	Pagination LastChangesPagination `json:"pagination"`
+	Data       []LastChangeItem      `json:"data"`
+}
+
+// LastChangesPagination captures pagination details for /last_change/{endpoint}.
+type LastChangesPagination struct {
+	CurrentPage int `json:"current_page,omitempty"`
+	PerPage     int `json:"per_page,omitempty"`
+}
+
+// LastChangeItem captures a single changed symbol row.
+type LastChangeItem struct {
+	Symbol     string `json:"symbol,omitempty"`
+	MICCode    string `json:"mic_code,omitempty"`
+	LastChange string `json:"last_change,omitempty"`
+}
+
+// LastChanges returns the /last_change/{endpoint} resource.
+func (c *Client) LastChanges(params LastChangesParams) *Request {
+	values := url.Values{}
+	addString(values, "start_date", params.StartDate)
+	addString(values, "symbol", params.Symbol)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addInt(values, "page", params.Page)
+	addInt(values, "outputsize", params.OutputSize)
+
+	path := "/last_change"
+	endpoint := strings.TrimSpace(params.Endpoint)
+	if endpoint != "" {
+		path += "/" + strings.TrimLeft(endpoint, "/")
+	}
+
+	return c.newRequest(path, values)
+}
+
 // ExchangeRateParams enumerates filters for /exchange_rate.
 type ExchangeRateParams struct {
 	Symbol   string

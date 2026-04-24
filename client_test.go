@@ -199,6 +199,31 @@ func TestListEndpointsRequests(t *testing.T) {
 				"outputsize": "6",
 			},
 		},
+		{
+			name: "last changes",
+			build: func(c *Client) *Request {
+				return c.LastChanges(LastChangesParams{
+					Endpoint:   "statistics",
+					StartDate:  "2023-10-14T00:00:00",
+					Symbol:     "AAPL",
+					Exchange:   "NASDAQ",
+					MICCode:    "XNAS",
+					Country:    "United States",
+					Page:       intPtr(2),
+					OutputSize: intPtr(10),
+				})
+			},
+			expectedPath: "/last_change/statistics",
+			expected: map[string]string{
+				"start_date": "2023-10-14T00:00:00",
+				"symbol":     "AAPL",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"page":       "2",
+				"outputsize": "10",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -589,6 +614,49 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["eps_basic"] != 2.11 {
 					t.Fatalf("expected eps_basic 2.11, got %v", first["eps_basic"])
+				}
+			},
+		},
+		{
+			name: "last changes",
+			build: func(c *Client) *Request {
+				return c.LastChanges(LastChangesParams{Endpoint: "statistics", Exchange: "NASDAQ", OutputSize: intPtr(1)})
+			},
+			expectedPath: "/last_change/statistics",
+			expected: map[string]string{
+				"exchange":   "NASDAQ",
+				"outputsize": "1",
+			},
+			response: map[string]any{
+				"pagination": map[string]any{
+					"current_page": 1,
+					"per_page":     1,
+				},
+				"data": []map[string]any{
+					{
+						"symbol":      "AAPL",
+						"mic_code":    "XNAS",
+						"last_change": "2023-10-14 12:22:48",
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				slice, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected slice, got %T", data)
+				}
+				if len(slice) != 1 {
+					t.Fatalf("expected 1 row, got %d", len(slice))
+				}
+				first, ok := slice[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map row, got %T", slice[0])
+				}
+				if first["symbol"] != "AAPL" {
+					t.Fatalf("expected symbol AAPL, got %v", first["symbol"])
+				}
+				if first["last_change"] != "2023-10-14 12:22:48" {
+					t.Fatalf("expected last_change 2023-10-14 12:22:48, got %v", first["last_change"])
 				}
 			},
 		},
@@ -1432,6 +1500,51 @@ func TestIncomeStatementTypedResponse(t *testing.T) {
 	}
 	if response.IncomeStatement[0].EPSBasic != 2.11 {
 		t.Fatalf("expected eps_basic 2.11, got %v", response.IncomeStatement[0].EPSBasic)
+	}
+}
+
+func TestLastChangesTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"pagination": map[string]any{
+				"current_page": 1,
+				"per_page":     30,
+			},
+			"data": []map[string]any{
+				{
+					"symbol":      "AAPL",
+					"mic_code":    "XNAS",
+					"last_change": "2023-10-14 12:22:48",
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response LastChangesResponse
+	err := client.LastChanges(LastChangesParams{Endpoint: "statistics"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Pagination.CurrentPage != 1 {
+		t.Fatalf("expected current_page 1, got %d", response.Pagination.CurrentPage)
+	}
+	if response.Pagination.PerPage != 30 {
+		t.Fatalf("expected per_page 30, got %d", response.Pagination.PerPage)
+	}
+	if len(response.Data) != 1 {
+		t.Fatalf("expected 1 data row, got %d", len(response.Data))
+	}
+	if response.Data[0].Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Data[0].Symbol)
+	}
+	if response.Data[0].MICCode != "XNAS" {
+		t.Fatalf("expected mic_code XNAS, got %q", response.Data[0].MICCode)
+	}
+	if response.Data[0].LastChange != "2023-10-14 12:22:48" {
+		t.Fatalf("expected last_change 2023-10-14 12:22:48, got %q", response.Data[0].LastChange)
 	}
 }
 

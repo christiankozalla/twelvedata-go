@@ -54,7 +54,7 @@ func main() {
 
 - Instrument catalogs: `StocksList`, `StockExchangesList`, `ForexPairsList`, `CryptocurrenciesList`, `ETFList`, `IndicesList`, `FundsList`, `BondsList`, `ExchangesList`, `TechnicalIndicatorsList`
 - Discovery: `SymbolSearch`
-- Market data: `ExchangeRate`, `CurrencyConversion`, `Quote`, `Price`, `EOD`, `Logo`, `Statistics`, `IncomeStatement`
+- Market data: `ExchangeRate`, `CurrencyConversion`, `Quote`, `Price`, `EOD`, `Logo`, `Statistics`, `IncomeStatement`, `LastChanges`
 - Options: `OptionsExpiration`, `OptionsChain`
 - Momentum indicators: `WILLR`, `ADX`, `PlusDI`, `MinusDI`
 - Time series builder: `TimeSeries`
@@ -67,6 +67,7 @@ Typed structs are available for the most commonly used endpoints:
 - `LogoResponse`
 - `StatisticsResponse`
 - `IncomeStatementResponse`
+- `LastChangesResponse`
 - `TimeSeriesResponse`
 - `WILLRResponse`
 - `ADXResponse`
