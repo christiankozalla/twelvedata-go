@@ -179,3 +179,18 @@ including cases where the HTTP status is `200` but the JSON payload has
 
 Use tagged releases for dependency pinning. Changelog entries are published in:
 - `CHANGELOG.md`
+
+## Local release process
+
+This repository uses a local tag-based release flow (no release-please automation).
+
+```bash
+# 1) update CHANGELOG.md
+git add CHANGELOG.md
+git commit -m "chore: release v0.2.0"
+
+# 2) create and push the tag
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin main
+git push origin v0.2.0
+```

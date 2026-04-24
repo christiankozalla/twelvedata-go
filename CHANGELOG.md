@@ -6,6 +6,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-24
+
+### Added
+- `Logo` endpoint support with `LogoParams` and `LogoResponse`.
+
+### Changed
+- README examples and endpoint listings were streamlined and updated.
+- Release flow moved to local tag-based publishing (release-please automation removed).
+
 ## [0.1.0] - 2026-04-14
 
 ### Added
@@ -15,5 +24,6 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.2.0
 [0.1.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.1.0
