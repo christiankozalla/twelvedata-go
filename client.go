@@ -564,6 +564,53 @@ func (c *Client) Logo(params LogoParams) *Request {
 	return c.newRequest("/logo", values)
 }
 
+// ProfileParams enumerates filters for /profile.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type ProfileParams struct {
+	Symbol   string
+	FIGI     string
+	ISIN     string
+	CUSIP    string
+	Exchange string
+	MICCode  string
+	Country  string
+}
+
+// ProfileResponse captures the /profile response.
+type ProfileResponse struct {
+	Symbol      string `json:"symbol,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Exchange    string `json:"exchange,omitempty"`
+	MICCode     string `json:"mic_code,omitempty"`
+	Sector      string `json:"sector,omitempty"`
+	Industry    string `json:"industry,omitempty"`
+	Employees   int    `json:"employees,omitempty"`
+	Website     string `json:"website,omitempty"`
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"`
+	CEO         string `json:"CEO,omitempty"`
+	Address     string `json:"address,omitempty"`
+	Address2    string `json:"address2,omitempty"`
+	City        string `json:"city,omitempty"`
+	ZIP         string `json:"zip,omitempty"`
+	State       string `json:"state,omitempty"`
+	Country     string `json:"country,omitempty"`
+	Phone       string `json:"phone,omitempty"`
+}
+
+// Profile returns the /profile resource.
+func (c *Client) Profile(params ProfileParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	return c.newRequest("/profile", values)
+}
+
 // StatisticsParams enumerates filters for /statistics.
 // At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
 type StatisticsParams struct {

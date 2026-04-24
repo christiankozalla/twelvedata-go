@@ -152,6 +152,22 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "profile",
+			build: func(c *Client) *Request {
+				return c.Profile(ProfileParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/profile",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"figi":     "BBG000B9Y5X2",
+				"isin":     "US0378331005",
+				"cusip":    "037833100",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+		},
+		{
 			name: "statistics",
 			build: func(c *Client) *Request {
 				return c.Statistics(StatisticsParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
@@ -486,6 +502,54 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if m["logo_quote"] != "https://logo.twelvedata.com/crypto/usd.png" {
 					t.Fatalf("expected logo_quote for USD, got %v", m["logo_quote"])
+				}
+			},
+		},
+		{
+			name: "profile",
+			build: func(c *Client) *Request {
+				return c.Profile(ProfileParams{Symbol: "AAPL", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/profile",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+			response: map[string]any{
+				"symbol":      "AAPL",
+				"name":        "Apple Inc",
+				"exchange":    "NASDAQ",
+				"mic_code":    "XNAS",
+				"sector":      "Technology",
+				"industry":    "Consumer Electronics",
+				"employees":   147000,
+				"website":     "http://www.apple.com",
+				"description": "Apple Inc. designs, manufactures, and markets smartphones",
+				"type":        "Common Stock",
+				"CEO":         "Mr. Timothy D. Cook",
+				"address":     "One Apple Park Way",
+				"address2":    "Cupertino, CA 95014",
+				"city":        "Cupertino",
+				"zip":         "95014",
+				"state":       "CA",
+				"country":     "US",
+				"phone":       "408-996-1010",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+				if m["symbol"] != "AAPL" {
+					t.Fatalf("expected symbol AAPL, got %v", m["symbol"])
+				}
+				if m["CEO"] != "Mr. Timothy D. Cook" {
+					t.Fatalf("expected CEO Mr. Timothy D. Cook, got %v", m["CEO"])
+				}
+				if m["employees"] != float64(147000) {
+					t.Fatalf("expected employees 147000, got %v", m["employees"])
 				}
 			},
 		},
@@ -1361,6 +1425,52 @@ func TestRequestAsNormalizedIntoTypedLogoResponse(t *testing.T) {
 	}
 	if response.LogoQuote != "https://logo.twelvedata.com/crypto/usd.png" {
 		t.Fatalf("expected logo quote USD URL, got %q", response.LogoQuote)
+	}
+}
+
+func TestProfileTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"symbol":      "AAPL",
+			"name":        "Apple Inc",
+			"exchange":    "NASDAQ",
+			"mic_code":    "XNAS",
+			"sector":      "Technology",
+			"industry":    "Consumer Electronics",
+			"employees":   147000,
+			"website":     "http://www.apple.com",
+			"description": "Apple Inc. designs, manufactures, and markets smartphones",
+			"type":        "Common Stock",
+			"CEO":         "Mr. Timothy D. Cook",
+			"address":     "One Apple Park Way",
+			"address2":    "Cupertino, CA 95014",
+			"city":        "Cupertino",
+			"zip":         "95014",
+			"state":       "CA",
+			"country":     "US",
+			"phone":       "408-996-1010",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response ProfileResponse
+	err := client.Profile(ProfileParams{Symbol: "AAPL"}).AsNormalized(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsNormalized: %v", err)
+	}
+	if response.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Symbol)
+	}
+	if response.CEO != "Mr. Timothy D. Cook" {
+		t.Fatalf("expected CEO Mr. Timothy D. Cook, got %q", response.CEO)
+	}
+	if response.Employees != 147000 {
+		t.Fatalf("expected employees 147000, got %d", response.Employees)
+	}
+	if response.Phone != "408-996-1010" {
+		t.Fatalf("expected phone 408-996-1010, got %q", response.Phone)
 	}
 }
 
