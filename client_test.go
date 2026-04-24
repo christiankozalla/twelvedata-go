@@ -138,6 +138,19 @@ func TestListEndpointsRequests(t *testing.T) {
 				"show_plan":  "true",
 			},
 		},
+		{
+			name: "logo",
+			build: func(c *Client) *Request {
+				return c.Logo(LogoParams{Symbol: "BTC/USD", Exchange: "Coinbase Pro", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/logo",
+			expected: map[string]string{
+				"symbol":   "BTC/USD",
+				"exchange": "Coinbase Pro",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -358,6 +371,48 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if m["open"] != "150.00" {
 					t.Fatalf("expected open 150.00, got %v", m["open"])
+				}
+			},
+		},
+		{
+			name: "logo",
+			build: func(c *Client) *Request {
+				return c.Logo(LogoParams{Symbol: "BTC/USD", Exchange: "Coinbase Pro", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/logo",
+			expected: map[string]string{
+				"symbol":   "BTC/USD",
+				"exchange": "Coinbase Pro",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol":   "BTC/USD",
+					"exchange": "Coinbase Pro",
+				},
+				"url":        "https://api.twelvedata.com/logo/apple.com",
+				"logo_base":  "https://logo.twelvedata.com/crypto/btc.png",
+				"logo_quote": "https://logo.twelvedata.com/crypto/usd.png",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+
+				meta, ok := m["meta"].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected meta map, got %T", m["meta"])
+				}
+				if meta["symbol"] != "BTC/USD" {
+					t.Fatalf("expected symbol BTC/USD, got %v", meta["symbol"])
+				}
+				if m["logo_base"] != "https://logo.twelvedata.com/crypto/btc.png" {
+					t.Fatalf("expected logo_base for BTC, got %v", m["logo_base"])
+				}
+				if m["logo_quote"] != "https://logo.twelvedata.com/crypto/usd.png" {
+					t.Fatalf("expected logo_quote for USD, got %v", m["logo_quote"])
 				}
 			},
 		},
@@ -1027,6 +1082,41 @@ func TestRequestAsNormalizedIntoTypedQuoteResponse(t *testing.T) {
 	}
 	if response.FiftyTwoWeek.High != "199.00" {
 		t.Fatalf("expected 52-week high 199.00, got %q", response.FiftyTwoWeek.High)
+	}
+}
+
+func TestRequestAsNormalizedIntoTypedLogoResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":   "BTC/USD",
+				"exchange": "Coinbase Pro",
+			},
+			"url":        "https://api.twelvedata.com/logo/apple.com",
+			"logo_base":  "https://logo.twelvedata.com/crypto/btc.png",
+			"logo_quote": "https://logo.twelvedata.com/crypto/usd.png",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response LogoResponse
+	err := client.Logo(LogoParams{Symbol: "BTC/USD"}).AsNormalized(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsNormalized: %v", err)
+	}
+	if response.Meta.Symbol != "BTC/USD" {
+		t.Fatalf("expected symbol BTC/USD, got %q", response.Meta.Symbol)
+	}
+	if response.Meta.Exchange != "Coinbase Pro" {
+		t.Fatalf("expected exchange Coinbase Pro, got %q", response.Meta.Exchange)
+	}
+	if response.LogoBase != "https://logo.twelvedata.com/crypto/btc.png" {
+		t.Fatalf("expected logo base BTC URL, got %q", response.LogoBase)
+	}
+	if response.LogoQuote != "https://logo.twelvedata.com/crypto/usd.png" {
+		t.Fatalf("expected logo quote USD URL, got %q", response.LogoQuote)
 	}
 }
 

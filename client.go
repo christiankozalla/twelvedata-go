@@ -532,6 +532,38 @@ func (c *Client) SymbolSearch(params SymbolSearchParams) *Request {
 	return c.newRequest("/symbol_search", values)
 }
 
+// LogoParams enumerates filters for /logo.
+type LogoParams struct {
+	Symbol   string
+	Exchange string
+	MICCode  string
+	Country  string
+}
+
+// LogoResponse captures the /logo response.
+type LogoResponse struct {
+	Meta      LogoMeta `json:"meta"`
+	URL       string   `json:"url,omitempty"`
+	LogoBase  string   `json:"logo_base,omitempty"`
+	LogoQuote string   `json:"logo_quote,omitempty"`
+}
+
+// LogoMeta captures /logo instrument metadata.
+type LogoMeta struct {
+	Symbol   string `json:"symbol,omitempty"`
+	Exchange string `json:"exchange,omitempty"`
+}
+
+// Logo returns the /logo resource.
+func (c *Client) Logo(params LogoParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	return c.newRequest("/logo", values)
+}
+
 // ExchangeRateParams enumerates filters for /exchange_rate.
 type ExchangeRateParams struct {
 	Symbol   string

@@ -2,7 +2,7 @@
 //
 // The current Go port already covers a practical base subset:
 //   - instrument catalogs such as stocks, forex pairs, exchanges, ETFs, funds, and bonds
-//   - market data endpoints such as exchange rate, currency conversion, quote, price, and eod
+//   - market data endpoints such as exchange rate, currency conversion, quote, price, eod, and logo
 //   - options endpoints for expiration and chain
 //   - time series and technical indicators
 //
