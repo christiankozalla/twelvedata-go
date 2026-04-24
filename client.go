@@ -564,6 +564,149 @@ func (c *Client) Logo(params LogoParams) *Request {
 	return c.newRequest("/logo", values)
 }
 
+// StatisticsParams enumerates filters for /statistics.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type StatisticsParams struct {
+	Symbol   string
+	FIGI     string
+	ISIN     string
+	CUSIP    string
+	Exchange string
+	MICCode  string
+	Country  string
+}
+
+// StatisticsResponse captures the /statistics response.
+type StatisticsResponse struct {
+	Meta       StatisticsMeta `json:"meta"`
+	Statistics StatisticsData `json:"statistics"`
+}
+
+// StatisticsMeta contains general instrument metadata for /statistics.
+type StatisticsMeta struct {
+	Symbol           string `json:"symbol,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Currency         string `json:"currency,omitempty"`
+	Exchange         string `json:"exchange,omitempty"`
+	MICCode          string `json:"mic_code,omitempty"`
+	ExchangeTimezone string `json:"exchange_timezone,omitempty"`
+}
+
+// StatisticsData contains all statistics sections returned by /statistics.
+type StatisticsData struct {
+	ValuationsMetrics  StatisticsValuationsMetrics  `json:"valuations_metrics"`
+	Financials         StatisticsFinancials         `json:"financials"`
+	StockStatistics    StatisticsStockStatistics    `json:"stock_statistics"`
+	StockPriceSummary  StatisticsStockPriceSummary  `json:"stock_price_summary"`
+	DividendsAndSplits StatisticsDividendsAndSplits `json:"dividends_and_splits"`
+}
+
+// StatisticsValuationsMetrics captures valuation metrics from /statistics.
+type StatisticsValuationsMetrics struct {
+	MarketCapitalization float64 `json:"market_capitalization,omitempty"`
+	EnterpriseValue      float64 `json:"enterprise_value,omitempty"`
+	TrailingPE           float64 `json:"trailing_pe,omitempty"`
+	ForwardPE            float64 `json:"forward_pe,omitempty"`
+	PEGRatio             float64 `json:"peg_ratio,omitempty"`
+	PriceToSalesTTM      float64 `json:"price_to_sales_ttm,omitempty"`
+	PriceToBookMRQ       float64 `json:"price_to_book_mrq,omitempty"`
+	EnterpriseToRevenue  float64 `json:"enterprise_to_revenue,omitempty"`
+	EnterpriseToEBITDA   float64 `json:"enterprise_to_ebitda,omitempty"`
+}
+
+// StatisticsFinancials captures financial metrics from /statistics.
+type StatisticsFinancials struct {
+	FiscalYearEnds    string                    `json:"fiscal_year_ends,omitempty"`
+	MostRecentQuarter string                    `json:"most_recent_quarter,omitempty"`
+	GrossMargin       float64                   `json:"gross_margin,omitempty"`
+	ProfitMargin      float64                   `json:"profit_margin,omitempty"`
+	OperatingMargin   float64                   `json:"operating_margin,omitempty"`
+	ReturnOnAssetsTTM float64                   `json:"return_on_assets_ttm,omitempty"`
+	ReturnOnEquityTTM float64                   `json:"return_on_equity_ttm,omitempty"`
+	IncomeStatement   StatisticsIncomeStatement `json:"income_statement"`
+	BalanceSheet      StatisticsBalanceSheet    `json:"balance_sheet"`
+	CashFlow          StatisticsCashFlow        `json:"cash_flow"`
+}
+
+// StatisticsIncomeStatement captures income statement metrics from /statistics.
+type StatisticsIncomeStatement struct {
+	RevenueTTM                 float64 `json:"revenue_ttm,omitempty"`
+	RevenuePerShareTTM         float64 `json:"revenue_per_share_ttm,omitempty"`
+	QuarterlyRevenueGrowth     float64 `json:"quarterly_revenue_growth,omitempty"`
+	GrossProfitTTM             float64 `json:"gross_profit_ttm,omitempty"`
+	EBITDA                     float64 `json:"ebitda,omitempty"`
+	NetIncomeToCommonTTM       float64 `json:"net_income_to_common_ttm,omitempty"`
+	DilutedEPSTTM              float64 `json:"diluted_eps_ttm,omitempty"`
+	QuarterlyEarningsGrowthYoY float64 `json:"quarterly_earnings_growth_yoy,omitempty"`
+}
+
+// StatisticsBalanceSheet captures balance sheet metrics from /statistics.
+type StatisticsBalanceSheet struct {
+	TotalCashMRQ         float64 `json:"total_cash_mrq,omitempty"`
+	TotalCashPerShareMRQ float64 `json:"total_cash_per_share_mrq,omitempty"`
+	TotalDebtMRQ         float64 `json:"total_debt_mrq,omitempty"`
+	TotalDebtToEquityMRQ float64 `json:"total_debt_to_equity_mrq,omitempty"`
+	CurrentRatioMRQ      float64 `json:"current_ratio_mrq,omitempty"`
+	BookValuePerShareMRQ float64 `json:"book_value_per_share_mrq,omitempty"`
+}
+
+// StatisticsCashFlow captures cash flow metrics from /statistics.
+type StatisticsCashFlow struct {
+	OperatingCashFlowTTM   float64 `json:"operating_cash_flow_ttm,omitempty"`
+	LeveredFreeCashFlowTTM float64 `json:"levered_free_cash_flow_ttm,omitempty"`
+}
+
+// StatisticsStockStatistics captures stock statistics from /statistics.
+type StatisticsStockStatistics struct {
+	SharesOutstanding               float64 `json:"shares_outstanding,omitempty"`
+	FloatShares                     float64 `json:"float_shares,omitempty"`
+	Avg10Volume                     float64 `json:"avg_10_volume,omitempty"`
+	Avg90Volume                     float64 `json:"avg_90_volume,omitempty"`
+	SharesShort                     float64 `json:"shares_short,omitempty"`
+	ShortRatio                      float64 `json:"short_ratio,omitempty"`
+	ShortPercentOfSharesOutstanding float64 `json:"short_percent_of_shares_outstanding,omitempty"`
+	PercentHeldByInsiders           float64 `json:"percent_held_by_insiders,omitempty"`
+	PercentHeldByInstitutions       float64 `json:"percent_held_by_institutions,omitempty"`
+}
+
+// StatisticsStockPriceSummary captures stock price summary fields from /statistics.
+type StatisticsStockPriceSummary struct {
+	FiftyTwoWeekLow    float64 `json:"fifty_two_week_low,omitempty"`
+	FiftyTwoWeekHigh   float64 `json:"fifty_two_week_high,omitempty"`
+	FiftyTwoWeekChange float64 `json:"fifty_two_week_change,omitempty"`
+	Beta               float64 `json:"beta,omitempty"`
+	Day50MA            float64 `json:"day_50_ma,omitempty"`
+	Day200MA           float64 `json:"day_200_ma,omitempty"`
+}
+
+// StatisticsDividendsAndSplits captures dividends and split fields from /statistics.
+type StatisticsDividendsAndSplits struct {
+	ForwardAnnualDividendRate    float64 `json:"forward_annual_dividend_rate,omitempty"`
+	ForwardAnnualDividendYield   float64 `json:"forward_annual_dividend_yield,omitempty"`
+	TrailingAnnualDividendRate   float64 `json:"trailing_annual_dividend_rate,omitempty"`
+	TrailingAnnualDividendYield  float64 `json:"trailing_annual_dividend_yield,omitempty"`
+	FiveYearAverageDividendYield float64 `json:"5_year_average_dividend_yield,omitempty"`
+	PayoutRatio                  float64 `json:"payout_ratio,omitempty"`
+	DividendFrequency            string  `json:"dividend_frequency,omitempty"`
+	DividendDate                 string  `json:"dividend_date,omitempty"`
+	ExDividendDate               string  `json:"ex_dividend_date,omitempty"`
+	LastSplitFactor              string  `json:"last_split_factor,omitempty"`
+	LastSplitDate                string  `json:"last_split_date,omitempty"`
+}
+
+// Statistics returns the /statistics resource.
+func (c *Client) Statistics(params StatisticsParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	return c.newRequest("/statistics", values)
+}
+
 // ExchangeRateParams enumerates filters for /exchange_rate.
 type ExchangeRateParams struct {
 	Symbol   string

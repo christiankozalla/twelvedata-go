@@ -151,6 +151,22 @@ func TestListEndpointsRequests(t *testing.T) {
 				"country":  "United States",
 			},
 		},
+		{
+			name: "statistics",
+			build: func(c *Client) *Request {
+				return c.Statistics(StatisticsParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/statistics",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"figi":     "BBG000B9Y5X2",
+				"isin":     "US0378331005",
+				"cusip":    "037833100",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -413,6 +429,72 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if m["logo_quote"] != "https://logo.twelvedata.com/crypto/usd.png" {
 					t.Fatalf("expected logo_quote for USD, got %v", m["logo_quote"])
+				}
+			},
+		},
+		{
+			name: "statistics",
+			build: func(c *Client) *Request {
+				return c.Statistics(StatisticsParams{Symbol: "AAPL", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/statistics",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol":            "AAPL",
+					"name":              "Apple Inc",
+					"currency":          "USD",
+					"exchange":          "NASDAQ",
+					"mic_code":          "XNAS",
+					"exchange_timezone": "America/New_York",
+				},
+				"statistics": map[string]any{
+					"valuations_metrics": map[string]any{
+						"market_capitalization": 2546807865344.0,
+					},
+					"financials": map[string]any{
+						"fiscal_year_ends": "2020-09-26",
+					},
+					"stock_statistics": map[string]any{
+						"avg_10_volume": 72804757.0,
+					},
+					"stock_price_summary": map[string]any{
+						"beta": 1.201965,
+					},
+					"dividends_and_splits": map[string]any{
+						"dividend_frequency": "Quarterly",
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+				stats, ok := m["statistics"].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected statistics map, got %T", m["statistics"])
+				}
+
+				valuations, ok := stats["valuations_metrics"].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected valuations_metrics map, got %T", stats["valuations_metrics"])
+				}
+				if valuations["market_capitalization"] != 2546807865344.0 {
+					t.Fatalf("expected market_capitalization 2546807865344, got %v", valuations["market_capitalization"])
+				}
+
+				dividends, ok := stats["dividends_and_splits"].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected dividends_and_splits map, got %T", stats["dividends_and_splits"])
+				}
+				if dividends["dividend_frequency"] != "Quarterly" {
+					t.Fatalf("expected dividend_frequency Quarterly, got %v", dividends["dividend_frequency"])
 				}
 			},
 		},
@@ -1117,6 +1199,76 @@ func TestRequestAsNormalizedIntoTypedLogoResponse(t *testing.T) {
 	}
 	if response.LogoQuote != "https://logo.twelvedata.com/crypto/usd.png" {
 		t.Fatalf("expected logo quote USD URL, got %q", response.LogoQuote)
+	}
+}
+
+func TestStatisticsTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNAS",
+				"exchange_timezone": "America/New_York",
+			},
+			"statistics": map[string]any{
+				"valuations_metrics": map[string]any{
+					"market_capitalization": 2546807865344.0,
+					"trailing_pe":           30.162493,
+				},
+				"financials": map[string]any{
+					"fiscal_year_ends": "2020-09-26",
+					"income_statement": map[string]any{
+						"revenue_ttm": 347155005440.0,
+					},
+					"balance_sheet": map[string]any{
+						"total_cash_mrq": 61696000000.0,
+					},
+					"cash_flow": map[string]any{
+						"operating_cash_flow_ttm": 104414003200.0,
+					},
+				},
+				"stock_statistics": map[string]any{
+					"avg_10_volume": 72804757.0,
+				},
+				"stock_price_summary": map[string]any{
+					"beta": 1.201965,
+				},
+				"dividends_and_splits": map[string]any{
+					"5_year_average_dividend_yield": 1.27,
+					"dividend_frequency":            "Quarterly",
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response StatisticsResponse
+	err := client.Statistics(StatisticsParams{Symbol: "AAPL"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if response.Statistics.ValuationsMetrics.TrailingPE != 30.162493 {
+		t.Fatalf("expected trailing PE 30.162493, got %v", response.Statistics.ValuationsMetrics.TrailingPE)
+	}
+	if response.Statistics.Financials.IncomeStatement.RevenueTTM != 347155005440 {
+		t.Fatalf("expected revenue_ttm 347155005440, got %v", response.Statistics.Financials.IncomeStatement.RevenueTTM)
+	}
+	if response.Statistics.StockPriceSummary.Beta != 1.201965 {
+		t.Fatalf("expected beta 1.201965, got %v", response.Statistics.StockPriceSummary.Beta)
+	}
+	if response.Statistics.DividendsAndSplits.FiveYearAverageDividendYield != 1.27 {
+		t.Fatalf("expected 5 year average dividend yield 1.27, got %v", response.Statistics.DividendsAndSplits.FiveYearAverageDividendYield)
+	}
+	if response.Statistics.DividendsAndSplits.DividendFrequency != "Quarterly" {
+		t.Fatalf("expected dividend frequency Quarterly, got %q", response.Statistics.DividendsAndSplits.DividendFrequency)
 	}
 }
 
