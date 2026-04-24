@@ -167,6 +167,38 @@ func TestListEndpointsRequests(t *testing.T) {
 				"country":  "United States",
 			},
 		},
+		{
+			name: "income statement",
+			build: func(c *Client) *Request {
+				return c.IncomeStatement(IncomeStatementParams{
+					Symbol:     "AAPL",
+					FIGI:       "BBG000B9Y5X2",
+					ISIN:       "US0378331005",
+					CUSIP:      "037833100",
+					Exchange:   "NASDAQ",
+					MICCode:    "XNAS",
+					Country:    "United States",
+					Period:     "quarterly",
+					StartDate:  "2024-01-01",
+					EndDate:    "2024-12-31",
+					OutputSize: intPtr(6),
+				})
+			},
+			expectedPath: "/income_statement",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"figi":       "BBG000B9Y5X2",
+				"isin":       "US0378331005",
+				"cusip":      "037833100",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"period":     "quarterly",
+				"start_date": "2024-01-01",
+				"end_date":   "2024-12-31",
+				"outputsize": "6",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -495,6 +527,68 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if dividends["dividend_frequency"] != "Quarterly" {
 					t.Fatalf("expected dividend_frequency Quarterly, got %v", dividends["dividend_frequency"])
+				}
+			},
+		},
+		{
+			name: "income statement",
+			build: func(c *Client) *Request {
+				return c.IncomeStatement(IncomeStatementParams{Symbol: "AAPL", Period: "quarterly", OutputSize: intPtr(1)})
+			},
+			expectedPath: "/income_statement",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"period":     "quarterly",
+				"outputsize": "1",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol":            "AAPL",
+					"name":              "Apple Inc",
+					"currency":          "USD",
+					"exchange":          "NASDAQ",
+					"mic_code":          "XNAS",
+					"exchange_timezone": "America/New_York",
+					"period":            "Quarterly",
+				},
+				"income_statement": []map[string]any{
+					{
+						"fiscal_date": "2021-12-31",
+						"quarter":     1,
+						"year":        2022,
+						"sales":       123945000000.0,
+						"operating_expense": map[string]any{
+							"research_and_development":           6306000000.0,
+							"selling_general_and_administrative": 6449000000.0,
+							"other_operating_expenses":           0.0,
+						},
+						"eps_basic": 2.11,
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+
+				items, ok := m["income_statement"].([]interface{})
+				if !ok {
+					t.Fatalf("expected income_statement list, got %T", m["income_statement"])
+				}
+				if len(items) != 1 {
+					t.Fatalf("expected 1 statement row, got %d", len(items))
+				}
+
+				first, ok := items[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected income_statement row map, got %T", items[0])
+				}
+				if first["fiscal_date"] != "2021-12-31" {
+					t.Fatalf("expected fiscal_date 2021-12-31, got %v", first["fiscal_date"])
+				}
+				if first["eps_basic"] != 2.11 {
+					t.Fatalf("expected eps_basic 2.11, got %v", first["eps_basic"])
 				}
 			},
 		},
@@ -1269,6 +1363,75 @@ func TestStatisticsTypedResponse(t *testing.T) {
 	}
 	if response.Statistics.DividendsAndSplits.DividendFrequency != "Quarterly" {
 		t.Fatalf("expected dividend frequency Quarterly, got %q", response.Statistics.DividendsAndSplits.DividendFrequency)
+	}
+}
+
+func TestIncomeStatementTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNAS",
+				"exchange_timezone": "America/New_York",
+				"period":            "Quarterly",
+			},
+			"income_statement": []map[string]any{
+				{
+					"fiscal_date":   "2021-12-31",
+					"quarter":       1,
+					"year":          2022,
+					"sales":         123945000000.0,
+					"cost_of_goods": 69702000000.0,
+					"gross_profit":  54243000000.0,
+					"operating_expense": map[string]any{
+						"research_and_development":           6306000000.0,
+						"selling_general_and_administrative": 6449000000.0,
+						"other_operating_expenses":           0.0,
+					},
+					"non_operating_interest": map[string]any{
+						"income":  650000000.0,
+						"expense": 694000000.0,
+					},
+					"eps_basic":                        2.11,
+					"eps_diluted":                      2.10,
+					"net_income_continuous_operations": 0.0,
+					"preferred_stock_dividends":        0.0,
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response IncomeStatementResponse
+	err := client.IncomeStatement(IncomeStatementParams{Symbol: "AAPL"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if response.Meta.Period != "Quarterly" {
+		t.Fatalf("expected period Quarterly, got %q", response.Meta.Period)
+	}
+	if len(response.IncomeStatement) != 1 {
+		t.Fatalf("expected 1 statement row, got %d", len(response.IncomeStatement))
+	}
+	if response.IncomeStatement[0].FiscalDate != "2021-12-31" {
+		t.Fatalf("expected fiscal_date 2021-12-31, got %q", response.IncomeStatement[0].FiscalDate)
+	}
+	if response.IncomeStatement[0].OperatingExpense.ResearchAndDevelopment != 6306000000 {
+		t.Fatalf("expected R&D 6306000000, got %v", response.IncomeStatement[0].OperatingExpense.ResearchAndDevelopment)
+	}
+	if response.IncomeStatement[0].NonOperatingInterest.Expense != 694000000 {
+		t.Fatalf("expected non operating interest expense 694000000, got %v", response.IncomeStatement[0].NonOperatingInterest.Expense)
+	}
+	if response.IncomeStatement[0].EPSBasic != 2.11 {
+		t.Fatalf("expected eps_basic 2.11, got %v", response.IncomeStatement[0].EPSBasic)
 	}
 }
 

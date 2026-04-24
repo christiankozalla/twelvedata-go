@@ -707,6 +707,95 @@ func (c *Client) Statistics(params StatisticsParams) *Request {
 	return c.newRequest("/statistics", values)
 }
 
+// IncomeStatementParams enumerates filters for /income_statement.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type IncomeStatementParams struct {
+	Symbol     string
+	FIGI       string
+	ISIN       string
+	CUSIP      string
+	Exchange   string
+	MICCode    string
+	Country    string
+	Period     string
+	StartDate  string
+	EndDate    string
+	OutputSize *int
+}
+
+// IncomeStatementResponse captures the /income_statement response.
+type IncomeStatementResponse struct {
+	Meta            IncomeStatementMeta    `json:"meta"`
+	IncomeStatement []IncomeStatementEntry `json:"income_statement"`
+}
+
+// IncomeStatementMeta contains general instrument metadata for /income_statement.
+type IncomeStatementMeta struct {
+	Symbol           string `json:"symbol,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Currency         string `json:"currency,omitempty"`
+	Exchange         string `json:"exchange,omitempty"`
+	MICCode          string `json:"mic_code,omitempty"`
+	ExchangeTimezone string `json:"exchange_timezone,omitempty"`
+	Period           string `json:"period,omitempty"`
+}
+
+// IncomeStatementEntry captures one income statement row.
+type IncomeStatementEntry struct {
+	FiscalDate                    string                          `json:"fiscal_date,omitempty"`
+	Quarter                       int                             `json:"quarter,omitempty"`
+	Year                          int                             `json:"year,omitempty"`
+	Sales                         float64                         `json:"sales,omitempty"`
+	CostOfGoods                   float64                         `json:"cost_of_goods,omitempty"`
+	GrossProfit                   float64                         `json:"gross_profit,omitempty"`
+	OperatingExpense              IncomeStatementOperatingExpense `json:"operating_expense"`
+	OperatingIncome               float64                         `json:"operating_income,omitempty"`
+	NonOperatingInterest          IncomeStatementInterest         `json:"non_operating_interest"`
+	OtherIncomeExpense            float64                         `json:"other_income_expense,omitempty"`
+	PretaxIncome                  float64                         `json:"pretax_income,omitempty"`
+	IncomeTax                     float64                         `json:"income_tax,omitempty"`
+	NetIncome                     float64                         `json:"net_income,omitempty"`
+	EPSBasic                      float64                         `json:"eps_basic,omitempty"`
+	EPSDiluted                    float64                         `json:"eps_diluted,omitempty"`
+	BasicSharesOutstanding        float64                         `json:"basic_shares_outstanding,omitempty"`
+	DilutedSharesOutstanding      float64                         `json:"diluted_shares_outstanding,omitempty"`
+	EBIT                          float64                         `json:"ebit,omitempty"`
+	EBITDA                        float64                         `json:"ebitda,omitempty"`
+	NetIncomeContinuousOperations float64                         `json:"net_income_continuous_operations,omitempty"`
+	MinorityInterests             float64                         `json:"minority_interests,omitempty"`
+	PreferredStockDividends       float64                         `json:"preferred_stock_dividends,omitempty"`
+}
+
+// IncomeStatementOperatingExpense captures operating expense details.
+type IncomeStatementOperatingExpense struct {
+	ResearchAndDevelopment          float64 `json:"research_and_development,omitempty"`
+	SellingGeneralAndAdministrative float64 `json:"selling_general_and_administrative,omitempty"`
+	OtherOperatingExpenses          float64 `json:"other_operating_expenses,omitempty"`
+}
+
+// IncomeStatementInterest captures non-operating interest details.
+type IncomeStatementInterest struct {
+	Income  float64 `json:"income,omitempty"`
+	Expense float64 `json:"expense,omitempty"`
+}
+
+// IncomeStatement returns the /income_statement resource.
+func (c *Client) IncomeStatement(params IncomeStatementParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addString(values, "period", params.Period)
+	addString(values, "start_date", params.StartDate)
+	addString(values, "end_date", params.EndDate)
+	addInt(values, "outputsize", params.OutputSize)
+	return c.newRequest("/income_statement", values)
+}
+
 // ExchangeRateParams enumerates filters for /exchange_rate.
 type ExchangeRateParams struct {
 	Symbol   string
