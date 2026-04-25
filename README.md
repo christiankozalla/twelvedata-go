@@ -190,12 +190,15 @@ Use tagged releases for dependency pinning. Changelog entries are published in:
 This repository uses a local tag-based release flow (no release-please automation).
 
 ```bash
-# 1) update CHANGELOG.md
-git add CHANGELOG.md
-git commit -m "chore: release v0.2.0"
+# 1) refresh CHANGELOG.md from commits since the latest tag
+./scripts/update_changelog.sh
 
-# 2) create and push the tag
-git tag -a v0.2.0 -m "Release v0.2.0"
+# 2) review CHANGELOG.md and cut the release commit
+git add CHANGELOG.md
+git commit -m "chore: release v0.4.0"
+
+# 3) create and push the tag
+git tag -a v0.4.0 -m "Release v0.4.0"
 git push origin main
-git push origin v0.2.0
+git push origin v0.4.0
 ```
