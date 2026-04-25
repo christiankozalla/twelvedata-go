@@ -78,7 +78,7 @@ while IFS= read -r subject; do
       other_items+=("- $clean")
       ;;
   esac
-done < <(git log --no-merges --pretty=format:%s "$range")
+done < <(git log --no-merges --pretty=format:%s%n "$range")
 
 generated_file="$(mktemp)"
 {

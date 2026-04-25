@@ -7,7 +7,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
-_No unreleased changes._
+### Added
+- support market_cap endpoint
+
+### Chore
+- add local changelog automation and backfill v0.3.0
+
 <!-- AUTO-UNRELEASED:END -->
 
 ## [0.3.0] - 2026-04-24
