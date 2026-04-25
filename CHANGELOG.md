@@ -7,13 +7,20 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
+_No unreleased changes._
+
+<!-- AUTO-UNRELEASED:END -->
+
+## [0.4.0] - 2026-04-25
+
 ### Added
 - support market_cap endpoint
 
+### Fixed
+- include final commit in changelog generation
+
 ### Chore
 - add local changelog automation and backfill v0.3.0
-
-<!-- AUTO-UNRELEASED:END -->
 
 ## [0.3.0] - 2026-04-24
 
@@ -41,7 +48,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.4.0
 [0.3.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.3.0
 [0.2.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.2.0
 [0.1.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.1.0
