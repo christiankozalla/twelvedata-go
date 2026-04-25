@@ -168,6 +168,26 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "market cap",
+			build: func(c *Client) *Request {
+				return c.MarketCap(MarketCapParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States", StartDate: "2023-01-01", EndDate: "2023-12-31", Page: intPtr(2), OutputSize: intPtr(10)})
+			},
+			expectedPath: "/market_cap",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"figi":       "BBG000B9Y5X2",
+				"isin":       "US0378331005",
+				"cusip":      "037833100",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"start_date": "2023-01-01",
+				"end_date":   "2023-12-31",
+				"page":       "2",
+				"outputsize": "10",
+			},
+		},
+		{
 			name: "statistics",
 			build: func(c *Client) *Request {
 				return c.Statistics(StatisticsParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
@@ -550,6 +570,58 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if m["employees"] != float64(147000) {
 					t.Fatalf("expected employees 147000, got %v", m["employees"])
+				}
+			},
+		},
+		{
+			name: "market cap",
+			build: func(c *Client) *Request {
+				return c.MarketCap(MarketCapParams{Symbol: "AAPL", OutputSize: intPtr(1)})
+			},
+			expectedPath: "/market_cap",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"outputsize": "1",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol":            "AAPL",
+					"name":              "Apple Inc",
+					"currency":          "USD",
+					"exchange":          "NASDAQ",
+					"mic_code":          "XNAS",
+					"exchange_timezone": "America/New_York",
+				},
+				"market_cap": []map[string]any{
+					{
+						"date":  "2025-07-14",
+						"value": 3115906555944.0,
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+
+				values, ok := m["market_cap"].([]interface{})
+				if !ok {
+					t.Fatalf("expected market_cap list, got %T", m["market_cap"])
+				}
+				if len(values) != 1 {
+					t.Fatalf("expected 1 market_cap row, got %d", len(values))
+				}
+
+				first, ok := values[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected market_cap row map, got %T", values[0])
+				}
+				if first["date"] != "2025-07-14" {
+					t.Fatalf("expected date 2025-07-14, got %v", first["date"])
+				}
+				if first["value"] != 3115906555944.0 {
+					t.Fatalf("expected value 3115906555944, got %v", first["value"])
 				}
 			},
 		},
@@ -1471,6 +1543,48 @@ func TestProfileTypedResponse(t *testing.T) {
 	}
 	if response.Phone != "408-996-1010" {
 		t.Fatalf("expected phone 408-996-1010, got %q", response.Phone)
+	}
+}
+
+func TestMarketCapTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNAS",
+				"exchange_timezone": "America/New_York",
+			},
+			"market_cap": []map[string]any{
+				{
+					"date":  "2025-07-14",
+					"value": 3115906555944,
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response MarketCapResponse
+	err := client.MarketCap(MarketCapParams{Symbol: "AAPL"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if len(response.MarketCap) != 1 {
+		t.Fatalf("expected 1 market cap row, got %d", len(response.MarketCap))
+	}
+	if response.MarketCap[0].Date != "2025-07-14" {
+		t.Fatalf("expected date 2025-07-14, got %q", response.MarketCap[0].Date)
+	}
+	if response.MarketCap[0].Value != 3115906555944 {
+		t.Fatalf("expected value 3115906555944, got %d", response.MarketCap[0].Value)
 	}
 }
 

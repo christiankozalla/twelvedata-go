@@ -611,6 +611,61 @@ func (c *Client) Profile(params ProfileParams) *Request {
 	return c.newRequest("/profile", values)
 }
 
+// MarketCapParams enumerates filters for /market_cap.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type MarketCapParams struct {
+	Symbol     string
+	FIGI       string
+	ISIN       string
+	CUSIP      string
+	Exchange   string
+	MICCode    string
+	Country    string
+	StartDate  string
+	EndDate    string
+	Page       *int
+	OutputSize *int
+}
+
+// MarketCapResponse captures the /market_cap response.
+type MarketCapResponse struct {
+	Meta      MarketCapMeta    `json:"meta"`
+	MarketCap []MarketCapValue `json:"market_cap"`
+}
+
+// MarketCapMeta contains general instrument metadata for /market_cap.
+type MarketCapMeta struct {
+	Symbol           string `json:"symbol,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Currency         string `json:"currency,omitempty"`
+	Exchange         string `json:"exchange,omitempty"`
+	MICCode          string `json:"mic_code,omitempty"`
+	ExchangeTimezone string `json:"exchange_timezone,omitempty"`
+}
+
+// MarketCapValue captures a single market capitalization datapoint.
+type MarketCapValue struct {
+	Date  string `json:"date,omitempty"`
+	Value int64  `json:"value,omitempty"`
+}
+
+// MarketCap returns the /market_cap resource.
+func (c *Client) MarketCap(params MarketCapParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addString(values, "start_date", params.StartDate)
+	addString(values, "end_date", params.EndDate)
+	addInt(values, "page", params.Page)
+	addInt(values, "outputsize", params.OutputSize)
+	return c.newRequest("/market_cap", values)
+}
+
 // StatisticsParams enumerates filters for /statistics.
 // At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
 type StatisticsParams struct {
