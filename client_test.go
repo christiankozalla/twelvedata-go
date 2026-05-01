@@ -236,6 +236,38 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "income statement consolidated",
+			build: func(c *Client) *Request {
+				return c.IncomeStatementConsolidated(IncomeStatementConsolidatedParams{
+					Symbol:     "AAPL",
+					FIGI:       "BBG000B9Y5X2",
+					ISIN:       "US0378331005",
+					CUSIP:      "037833100",
+					Exchange:   "NASDAQ",
+					MICCode:    "XNAS",
+					Country:    "United States",
+					Period:     "quarterly",
+					StartDate:  "2024-01-01",
+					EndDate:    "2024-12-31",
+					OutputSize: intPtr(6),
+				})
+			},
+			expectedPath: "/income_statement/consolidated",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"figi":       "BBG000B9Y5X2",
+				"isin":       "US0378331005",
+				"cusip":      "037833100",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"period":     "quarterly",
+				"start_date": "2024-01-01",
+				"end_date":   "2024-12-31",
+				"outputsize": "6",
+			},
+		},
+		{
 			name: "last changes",
 			build: func(c *Client) *Request {
 				return c.LastChanges(LastChangesParams{
@@ -750,6 +782,55 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["eps_basic"] != 2.11 {
 					t.Fatalf("expected eps_basic 2.11, got %v", first["eps_basic"])
+				}
+			},
+		},
+		{
+			name: "income statement consolidated",
+			build: func(c *Client) *Request {
+				return c.IncomeStatementConsolidated(IncomeStatementConsolidatedParams{Symbol: "AAPL", Period: "quarterly", OutputSize: intPtr(1)})
+			},
+			expectedPath: "/income_statement/consolidated",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"period":     "quarterly",
+				"outputsize": "1",
+			},
+			response: map[string]any{
+				"income_statement": []map[string]any{
+					{
+						"fiscal_date": "2023-09-30",
+						"year":        2022,
+						"revenue": map[string]any{
+							"total_revenue": 383285000000.0,
+						},
+					},
+				},
+				"status": "ok",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				items, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected list, got %T", data)
+				}
+				if len(items) != 1 {
+					t.Fatalf("expected 1 statement row, got %d", len(items))
+				}
+
+				first, ok := items[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected income_statement row map, got %T", items[0])
+				}
+				if first["fiscal_date"] != "2023-09-30" {
+					t.Fatalf("expected fiscal_date 2023-09-30, got %v", first["fiscal_date"])
+				}
+
+				revenue, ok := first["revenue"].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected revenue map, got %T", first["revenue"])
+				}
+				if revenue["total_revenue"] != 383285000000.0 {
+					t.Fatalf("expected total_revenue 383285000000, got %v", revenue["total_revenue"])
 				}
 			},
 		},
@@ -1724,6 +1805,52 @@ func TestIncomeStatementTypedResponse(t *testing.T) {
 	}
 	if response.IncomeStatement[0].EPSBasic != 2.11 {
 		t.Fatalf("expected eps_basic 2.11, got %v", response.IncomeStatement[0].EPSBasic)
+	}
+}
+
+func TestIncomeStatementConsolidatedTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"income_statement": []map[string]any{
+				{
+					"fiscal_date": "2023-09-30",
+					"year":        2022,
+					"revenue": map[string]any{
+						"total_revenue": 383285000000.0,
+					},
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response IncomeStatementConsolidatedResponse
+	err := client.IncomeStatementConsolidated(IncomeStatementConsolidatedParams{Symbol: "AAPL"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.IncomeStatement) != 1 {
+		t.Fatalf("expected 1 statement row, got %d", len(response.IncomeStatement))
+	}
+	if response.IncomeStatement[0]["fiscal_date"] != "2023-09-30" {
+		t.Fatalf("expected fiscal_date 2023-09-30, got %v", response.IncomeStatement[0]["fiscal_date"])
+	}
+	revenueRaw, ok := response.IncomeStatement[0]["revenue"]
+	if !ok {
+		t.Fatalf("expected revenue field in first statement row")
+	}
+	revenue, ok := revenueRaw.(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected revenue map, got %T", revenueRaw)
+	}
+	if revenue["total_revenue"] != 383285000000.0 {
+		t.Fatalf("expected total_revenue 383285000000, got %v", revenue["total_revenue"])
 	}
 }
 

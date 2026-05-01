@@ -825,10 +825,21 @@ type IncomeStatementParams struct {
 	OutputSize *int
 }
 
+// IncomeStatementConsolidatedParams enumerates filters for /income_statement/consolidated.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type IncomeStatementConsolidatedParams = IncomeStatementParams
+
 // IncomeStatementResponse captures the /income_statement response.
 type IncomeStatementResponse struct {
 	Meta            IncomeStatementMeta    `json:"meta"`
 	IncomeStatement []IncomeStatementEntry `json:"income_statement"`
+}
+
+// IncomeStatementConsolidatedResponse captures the /income_statement/consolidated response.
+// This endpoint returns deeply nested rows, so each row is left as a generic map for flexibility.
+type IncomeStatementConsolidatedResponse struct {
+	IncomeStatement []map[string]any `json:"income_statement"`
+	Status          string           `json:"status,omitempty"`
 }
 
 // IncomeStatementMeta contains general instrument metadata for /income_statement.
@@ -896,6 +907,23 @@ func (c *Client) IncomeStatement(params IncomeStatementParams) *Request {
 	addString(values, "end_date", params.EndDate)
 	addInt(values, "outputsize", params.OutputSize)
 	return c.newRequest("/income_statement", values)
+}
+
+// IncomeStatementConsolidated returns the /income_statement/consolidated resource.
+func (c *Client) IncomeStatementConsolidated(params IncomeStatementConsolidatedParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addString(values, "period", params.Period)
+	addString(values, "start_date", params.StartDate)
+	addString(values, "end_date", params.EndDate)
+	addInt(values, "outputsize", params.OutputSize)
+	return c.newRequest("/income_statement/consolidated", values)
 }
 
 // LastChangesParams enumerates filters for /last_change/{endpoint}.
@@ -1205,6 +1233,9 @@ func normalizeJSON(payload interface{}) interface{} {
 			}
 			if earnings, ok := m["earnings"]; ok {
 				return earnings
+			}
+			if incomeStatement, ok := m["income_statement"]; ok {
+				return incomeStatement
 			}
 			return []interface{}{}
 		}
