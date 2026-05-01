@@ -204,6 +204,22 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "earnings estimate",
+			build: func(c *Client) *Request {
+				return c.EarningsEstimate(EarningsEstimateParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/earnings_estimate",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"figi":     "BBG000B9Y5X2",
+				"isin":     "US0378331005",
+				"cusip":    "037833100",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+		},
+		{
 			name: "income statement",
 			build: func(c *Client) *Request {
 				return c.IncomeStatement(IncomeStatementParams{
@@ -782,6 +798,56 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["eps_basic"] != 2.11 {
 					t.Fatalf("expected eps_basic 2.11, got %v", first["eps_basic"])
+				}
+			},
+		},
+		{
+			name: "earnings estimate",
+			build: func(c *Client) *Request {
+				return c.EarningsEstimate(EarningsEstimateParams{Symbol: "AAPL", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
+			},
+			expectedPath: "/earnings_estimate",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol": "AAPL",
+				},
+				"earnings_estimate": []map[string]any{
+					{
+						"date":               "2022-09-30",
+						"period":             "current_quarter",
+						"number_of_analysts": 27,
+						"avg_estimate":       1.26,
+					},
+				},
+				"status": "ok",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				items, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected list, got %T", data)
+				}
+				if len(items) != 1 {
+					t.Fatalf("expected 1 estimate row, got %d", len(items))
+				}
+
+				first, ok := items[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected earnings_estimate row map, got %T", items[0])
+				}
+				if first["date"] != "2022-09-30" {
+					t.Fatalf("expected date 2022-09-30, got %v", first["date"])
+				}
+				if first["period"] != "current_quarter" {
+					t.Fatalf("expected period current_quarter, got %v", first["period"])
+				}
+				if first["avg_estimate"] != 1.26 {
+					t.Fatalf("expected avg_estimate 1.26, got %v", first["avg_estimate"])
 				}
 			},
 		},
@@ -1736,6 +1802,64 @@ func TestStatisticsTypedResponse(t *testing.T) {
 	}
 	if response.Statistics.DividendsAndSplits.DividendFrequency != "Quarterly" {
 		t.Fatalf("expected dividend frequency Quarterly, got %q", response.Statistics.DividendsAndSplits.DividendFrequency)
+	}
+}
+
+func TestEarningsEstimateTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange_timezone": "America/New_York",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNGS",
+				"type":              "Common Stock",
+			},
+			"earnings_estimate": []map[string]any{
+				{
+					"date":               "2022-09-30",
+					"period":             "current_quarter",
+					"number_of_analysts": 27,
+					"avg_estimate":       1.26,
+					"low_estimate":       1.13,
+					"high_estimate":      1.35,
+					"year_ago_eps":       1.24,
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response EarningsEstimateResponse
+	err := client.EarningsEstimate(EarningsEstimateParams{Symbol: "AAPL"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if response.Meta.Type != "Common Stock" {
+		t.Fatalf("expected type Common Stock, got %q", response.Meta.Type)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.EarningsEstimate) != 1 {
+		t.Fatalf("expected 1 estimate row, got %d", len(response.EarningsEstimate))
+	}
+	if response.EarningsEstimate[0].Period != "current_quarter" {
+		t.Fatalf("expected period current_quarter, got %q", response.EarningsEstimate[0].Period)
+	}
+	if response.EarningsEstimate[0].NumberOfAnalysts != 27 {
+		t.Fatalf("expected number_of_analysts 27, got %d", response.EarningsEstimate[0].NumberOfAnalysts)
+	}
+	if response.EarningsEstimate[0].AvgEstimate != 1.26 {
+		t.Fatalf("expected avg_estimate 1.26, got %v", response.EarningsEstimate[0].AvgEstimate)
 	}
 }
 

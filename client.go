@@ -809,6 +809,60 @@ func (c *Client) Statistics(params StatisticsParams) *Request {
 	return c.newRequest("/statistics", values)
 }
 
+// EarningsEstimateParams enumerates filters for /earnings_estimate.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type EarningsEstimateParams struct {
+	Symbol   string
+	FIGI     string
+	ISIN     string
+	CUSIP    string
+	Exchange string
+	MICCode  string
+	Country  string
+}
+
+// EarningsEstimateResponse captures the /earnings_estimate response.
+type EarningsEstimateResponse struct {
+	Meta             EarningsEstimateMeta    `json:"meta"`
+	EarningsEstimate []EarningsEstimateValue `json:"earnings_estimate"`
+	Status           string                  `json:"status,omitempty"`
+}
+
+// EarningsEstimateMeta contains general instrument metadata for /earnings_estimate.
+type EarningsEstimateMeta struct {
+	Symbol           string `json:"symbol,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Currency         string `json:"currency,omitempty"`
+	ExchangeTimezone string `json:"exchange_timezone,omitempty"`
+	Exchange         string `json:"exchange,omitempty"`
+	MICCode          string `json:"mic_code,omitempty"`
+	Type             string `json:"type,omitempty"`
+}
+
+// EarningsEstimateValue captures one earnings estimate row.
+type EarningsEstimateValue struct {
+	Date             string  `json:"date,omitempty"`
+	Period           string  `json:"period,omitempty"`
+	NumberOfAnalysts int     `json:"number_of_analysts,omitempty"`
+	AvgEstimate      float64 `json:"avg_estimate,omitempty"`
+	LowEstimate      float64 `json:"low_estimate,omitempty"`
+	HighEstimate     float64 `json:"high_estimate,omitempty"`
+	YearAgoEPS       float64 `json:"year_ago_eps,omitempty"`
+}
+
+// EarningsEstimate returns the /earnings_estimate resource.
+func (c *Client) EarningsEstimate(params EarningsEstimateParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	return c.newRequest("/earnings_estimate", values)
+}
+
 // IncomeStatementParams enumerates filters for /income_statement.
 // At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
 type IncomeStatementParams struct {
@@ -1234,6 +1288,9 @@ func normalizeJSON(payload interface{}) interface{} {
 			if earnings, ok := m["earnings"]; ok {
 				return earnings
 			}
+			if earningsEstimate, ok := m["earnings_estimate"]; ok {
+				return earningsEstimate
+			}
 			if incomeStatement, ok := m["income_statement"]; ok {
 				return incomeStatement
 			}
@@ -1250,6 +1307,9 @@ func normalizeJSON(payload interface{}) interface{} {
 	}
 	if earnings, ok := m["earnings"]; ok {
 		return earnings
+	}
+	if earningsEstimate, ok := m["earnings_estimate"]; ok {
+		return earningsEstimate
 	}
 	return payload
 }
