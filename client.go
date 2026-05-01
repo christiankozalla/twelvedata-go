@@ -863,6 +863,52 @@ func (c *Client) EarningsEstimate(params EarningsEstimateParams) *Request {
 	return c.newRequest("/earnings_estimate", values)
 }
 
+// RevenueEstimateParams enumerates filters for /revenue_estimate.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type RevenueEstimateParams struct {
+	Symbol   string
+	FIGI     string
+	ISIN     string
+	CUSIP    string
+	Exchange string
+	MICCode  string
+	Country  string
+	DP       *int
+}
+
+// RevenueEstimateResponse captures the /revenue_estimate response.
+type RevenueEstimateResponse struct {
+	Meta            EarningsEstimateMeta   `json:"meta"`
+	RevenueEstimate []RevenueEstimateValue `json:"revenue_estimate"`
+	Status          string                 `json:"status,omitempty"`
+}
+
+// RevenueEstimateValue captures one revenue estimate row.
+type RevenueEstimateValue struct {
+	Date             string  `json:"date,omitempty"`
+	Period           string  `json:"period,omitempty"`
+	NumberOfAnalysts int     `json:"number_of_analysts,omitempty"`
+	AvgEstimate      float64 `json:"avg_estimate,omitempty"`
+	LowEstimate      float64 `json:"low_estimate,omitempty"`
+	HighEstimate     float64 `json:"high_estimate,omitempty"`
+	YearAgoSales     float64 `json:"year_ago_sales,omitempty"`
+	SalesGrowth      float64 `json:"sales_growth,omitempty"`
+}
+
+// RevenueEstimate returns the /revenue_estimate resource.
+func (c *Client) RevenueEstimate(params RevenueEstimateParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addInt(values, "dp", params.DP)
+	return c.newRequest("/revenue_estimate", values)
+}
+
 // IncomeStatementParams enumerates filters for /income_statement.
 // At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
 type IncomeStatementParams struct {
@@ -1291,6 +1337,9 @@ func normalizeJSON(payload interface{}) interface{} {
 			if earningsEstimate, ok := m["earnings_estimate"]; ok {
 				return earningsEstimate
 			}
+			if revenueEstimate, ok := m["revenue_estimate"]; ok {
+				return revenueEstimate
+			}
 			if incomeStatement, ok := m["income_statement"]; ok {
 				return incomeStatement
 			}
@@ -1310,6 +1359,9 @@ func normalizeJSON(payload interface{}) interface{} {
 	}
 	if earningsEstimate, ok := m["earnings_estimate"]; ok {
 		return earningsEstimate
+	}
+	if revenueEstimate, ok := m["revenue_estimate"]; ok {
+		return revenueEstimate
 	}
 	return payload
 }

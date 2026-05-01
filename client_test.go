@@ -220,6 +220,23 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "revenue estimate",
+			build: func(c *Client) *Request {
+				return c.RevenueEstimate(RevenueEstimateParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States", DP: intPtr(5)})
+			},
+			expectedPath: "/revenue_estimate",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"figi":     "BBG000B9Y5X2",
+				"isin":     "US0378331005",
+				"cusip":    "037833100",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+				"dp":       "5",
+			},
+		},
+		{
 			name: "income statement",
 			build: func(c *Client) *Request {
 				return c.IncomeStatement(IncomeStatementParams{
@@ -848,6 +865,62 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["avg_estimate"] != 1.26 {
 					t.Fatalf("expected avg_estimate 1.26, got %v", first["avg_estimate"])
+				}
+			},
+		},
+		{
+			name: "revenue estimate",
+			build: func(c *Client) *Request {
+				return c.RevenueEstimate(RevenueEstimateParams{Symbol: "AAPL", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States", DP: intPtr(5)})
+			},
+			expectedPath: "/revenue_estimate",
+			expected: map[string]string{
+				"symbol":   "AAPL",
+				"exchange": "NASDAQ",
+				"mic_code": "XNAS",
+				"country":  "United States",
+				"dp":       "5",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol": "AAPL",
+				},
+				"revenue_estimate": []map[string]any{
+					{
+						"date":               "2022-09-30",
+						"period":             "current_quarter",
+						"number_of_analysts": 24,
+						"avg_estimate":       88631500000.0,
+						"year_ago_sales":     83360000000.0,
+						"sales_growth":       0.06,
+					},
+				},
+				"status": "ok",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				items, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected list, got %T", data)
+				}
+				if len(items) != 1 {
+					t.Fatalf("expected 1 estimate row, got %d", len(items))
+				}
+
+				first, ok := items[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected revenue_estimate row map, got %T", items[0])
+				}
+				if first["date"] != "2022-09-30" {
+					t.Fatalf("expected date 2022-09-30, got %v", first["date"])
+				}
+				if first["period"] != "current_quarter" {
+					t.Fatalf("expected period current_quarter, got %v", first["period"])
+				}
+				if first["avg_estimate"] != 88631500000.0 {
+					t.Fatalf("expected avg_estimate 88631500000, got %v", first["avg_estimate"])
+				}
+				if first["sales_growth"] != 0.06 {
+					t.Fatalf("expected sales_growth 0.06, got %v", first["sales_growth"])
 				}
 			},
 		},
@@ -1860,6 +1933,65 @@ func TestEarningsEstimateTypedResponse(t *testing.T) {
 	}
 	if response.EarningsEstimate[0].AvgEstimate != 1.26 {
 		t.Fatalf("expected avg_estimate 1.26, got %v", response.EarningsEstimate[0].AvgEstimate)
+	}
+}
+
+func TestRevenueEstimateTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange_timezone": "America/New_York",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNGS",
+				"type":              "Common Stock",
+			},
+			"revenue_estimate": []map[string]any{
+				{
+					"date":               "2022-09-30",
+					"period":             "current_quarter",
+					"number_of_analysts": 24,
+					"avg_estimate":       88631500000.0,
+					"low_estimate":       85144300000.0,
+					"high_estimate":      92794900000.0,
+					"year_ago_sales":     83360000000.0,
+					"sales_growth":       0.06,
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response RevenueEstimateResponse
+	err := client.RevenueEstimate(RevenueEstimateParams{Symbol: "AAPL", DP: intPtr(5)}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.RevenueEstimate) != 1 {
+		t.Fatalf("expected 1 estimate row, got %d", len(response.RevenueEstimate))
+	}
+	if response.RevenueEstimate[0].Period != "current_quarter" {
+		t.Fatalf("expected period current_quarter, got %q", response.RevenueEstimate[0].Period)
+	}
+	if response.RevenueEstimate[0].NumberOfAnalysts != 24 {
+		t.Fatalf("expected number_of_analysts 24, got %d", response.RevenueEstimate[0].NumberOfAnalysts)
+	}
+	if response.RevenueEstimate[0].AvgEstimate != 88631500000.0 {
+		t.Fatalf("expected avg_estimate 88631500000, got %v", response.RevenueEstimate[0].AvgEstimate)
+	}
+	if response.RevenueEstimate[0].SalesGrowth != 0.06 {
+		t.Fatalf("expected sales_growth 0.06, got %v", response.RevenueEstimate[0].SalesGrowth)
 	}
 }
 
