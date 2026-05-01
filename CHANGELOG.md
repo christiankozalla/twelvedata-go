@@ -7,7 +7,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
-_No unreleased changes._
+### Added
+- support revenue forecasting endpoint
+- support earnings forecasting endpoint
+- support consolidated income_statement endpoint
 
 <!-- AUTO-UNRELEASED:END -->
 
