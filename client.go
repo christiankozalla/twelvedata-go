@@ -417,6 +417,102 @@ func (c *Client) ETFList(params ETFListParams) *Request {
 	return c.newRequest("/etf", values)
 }
 
+// ETFsListParams enumerates filters for /etfs/list.
+type ETFsListParams struct {
+	Symbol     string
+	FIGI       string
+	ISIN       string
+	CUSIP      string
+	CIK        string
+	Country    string
+	FundFamily string
+	FundType   string
+	Delimiter  string
+	DP         *int
+	Page       *int
+	OutputSize *int
+}
+
+// ETFsListResponse captures the /etfs/list response.
+type ETFsListResponse struct {
+	Result ETFsListResult `json:"result"`
+	Status string         `json:"status,omitempty"`
+}
+
+// ETFsListResult captures list metadata and rows from /etfs/list.
+type ETFsListResult struct {
+	Count int            `json:"count,omitempty"`
+	List  []ETFsListItem `json:"list"`
+}
+
+// ETFsListItem captures one ETF row from /etfs/list.
+type ETFsListItem struct {
+	Symbol     string `json:"symbol,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Country    string `json:"country,omitempty"`
+	MicCode    string `json:"mic_code,omitempty"`
+	FundFamily string `json:"fund_family,omitempty"`
+	FundType   string `json:"fund_type,omitempty"`
+}
+
+// ETFsList returns the /etfs/list directory.
+func (c *Client) ETFsList(params ETFsListParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "cik", params.CIK)
+	addString(values, "country", params.Country)
+	addString(values, "fund_family", params.FundFamily)
+	addString(values, "fund_type", params.FundType)
+	addString(values, "delimiter", params.Delimiter)
+	addInt(values, "dp", params.DP)
+	addInt(values, "page", params.Page)
+	addInt(values, "outputsize", params.OutputSize)
+	return c.newRequest("/etfs/list", values)
+}
+
+// ETFsFamilyParams enumerates filters for /etfs/family.
+type ETFsFamilyParams struct {
+	Country    string
+	FundFamily string
+}
+
+// ETFsFamilyResponse captures the /etfs/family response.
+type ETFsFamilyResponse struct {
+	Result map[string][]string `json:"result"`
+	Status string              `json:"status,omitempty"`
+}
+
+// ETFsFamily returns the /etfs/family endpoint.
+func (c *Client) ETFsFamily(params ETFsFamilyParams) *Request {
+	values := url.Values{}
+	addString(values, "country", params.Country)
+	addString(values, "fund_family", params.FundFamily)
+	return c.newRequest("/etfs/family", values)
+}
+
+// ETFsTypeParams enumerates filters for /etfs/type.
+type ETFsTypeParams struct {
+	Country  string
+	FundType string
+}
+
+// ETFsTypeResponse captures the /etfs/type response.
+type ETFsTypeResponse struct {
+	Result map[string][]string `json:"result"`
+	Status string              `json:"status,omitempty"`
+}
+
+// ETFsType returns the /etfs/type endpoint.
+func (c *Client) ETFsType(params ETFsTypeParams) *Request {
+	values := url.Values{}
+	addString(values, "country", params.Country)
+	addString(values, "fund_type", params.FundType)
+	return c.newRequest("/etfs/type", values)
+}
+
 // IndicesListParams enumerates filters for /indices.
 type IndicesListParams struct {
 	Symbol          string
@@ -1320,10 +1416,13 @@ func normalizeJSON(payload interface{}) interface{} {
 
 	if status, ok := m["status"].(string); ok {
 		if strings.EqualFold(status, "ok") {
-			if result, ok := m["result"].(map[string]interface{}); ok {
-				if list, ok := result["list"]; ok {
-					return list
+			if result, ok := m["result"]; ok {
+				if resultMap, ok := result.(map[string]interface{}); ok {
+					if list, ok := resultMap["list"]; ok {
+						return list
+					}
 				}
+				return result
 			}
 			if data, ok := m["data"]; ok {
 				return data
@@ -1346,6 +1445,15 @@ func normalizeJSON(payload interface{}) interface{} {
 			return []interface{}{}
 		}
 		return payload
+	}
+
+	if result, ok := m["result"]; ok {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if list, ok := resultMap["list"]; ok {
+				return list
+			}
+		}
+		return result
 	}
 
 	if data, ok := m["data"]; ok {

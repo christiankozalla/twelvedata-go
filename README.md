@@ -52,7 +52,7 @@ func main() {
 
 ## Supported endpoints
 
-- Instrument catalogs: `StocksList`, `StockExchangesList`, `ForexPairsList`, `CryptocurrenciesList`, `ETFList`, `IndicesList`, `FundsList`, `BondsList`, `ExchangesList`, `TechnicalIndicatorsList`
+- Instrument catalogs: `StocksList`, `StockExchangesList`, `ForexPairsList`, `CryptocurrenciesList`, `ETFList`, `ETFsList`, `ETFsFamily`, `ETFsType`, `IndicesList`, `FundsList`, `BondsList`, `ExchangesList`, `TechnicalIndicatorsList`
 - Discovery: `SymbolSearch`
 - Market data: `ExchangeRate`, `CurrencyConversion`, `Quote`, `Price`, `EOD`, `Logo`, `Profile`, `MarketCap`, `Statistics`, `EarningsEstimate`, `RevenueEstimate`, `IncomeStatement`, `IncomeStatementConsolidated`, `LastChanges`
 - Options: `OptionsExpiration`, `OptionsChain`
@@ -64,6 +64,9 @@ func main() {
 Typed structs are available for the most commonly used endpoints:
 - `PriceResponse`
 - `QuoteResponse`
+- `ETFsListResponse`
+- `ETFsFamilyResponse`
+- `ETFsTypeResponse`
 - `LogoResponse`
 - `ProfileResponse`
 - `MarketCapResponse`

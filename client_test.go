@@ -78,6 +78,62 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "etfs list",
+			build: func(c *Client) *Request {
+				return c.ETFsList(ETFsListParams{
+					Symbol:     "IVV",
+					FIGI:       "BBG000BVZ697",
+					ISIN:       "US4642872000",
+					CUSIP:      "464287200",
+					CIK:        "95953",
+					Country:    "United States",
+					FundFamily: "iShares",
+					FundType:   "Large Blend",
+					Delimiter:  ";",
+					DP:         intPtr(5),
+					Page:       intPtr(2),
+					OutputSize: intPtr(25),
+				})
+			},
+			expectedPath: "/etfs/list",
+			expected: map[string]string{
+				"symbol":      "IVV",
+				"figi":        "BBG000BVZ697",
+				"isin":        "US4642872000",
+				"cusip":       "464287200",
+				"cik":         "95953",
+				"country":     "United States",
+				"fund_family": "iShares",
+				"fund_type":   "Large Blend",
+				"delimiter":   ";",
+				"dp":          "5",
+				"page":        "2",
+				"outputsize":  "25",
+			},
+		},
+		{
+			name: "etfs family",
+			build: func(c *Client) *Request {
+				return c.ETFsFamily(ETFsFamilyParams{Country: "United States", FundFamily: "iShares"})
+			},
+			expectedPath: "/etfs/family",
+			expected: map[string]string{
+				"country":     "United States",
+				"fund_family": "iShares",
+			},
+		},
+		{
+			name: "etfs type",
+			build: func(c *Client) *Request {
+				return c.ETFsType(ETFsTypeParams{Country: "United States", FundType: "Large Blend"})
+			},
+			expectedPath: "/etfs/type",
+			expected: map[string]string{
+				"country":   "United States",
+				"fund_type": "Large Blend",
+			},
+		},
+		{
 			name: "indices list",
 			build: func(c *Client) *Request {
 				return c.IndicesList(IndicesListParams{MICCode: "XNYS"})
@@ -1013,6 +1069,111 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["last_change"] != "2023-10-14 12:22:48" {
 					t.Fatalf("expected last_change 2023-10-14 12:22:48, got %v", first["last_change"])
+				}
+			},
+		},
+		{
+			name: "etfs list",
+			build: func(c *Client) *Request {
+				return c.ETFsList(ETFsListParams{Symbol: "IVV", OutputSize: intPtr(1), Page: intPtr(2), DP: intPtr(4)})
+			},
+			expectedPath: "/etfs/list",
+			expected: map[string]string{
+				"symbol":     "IVV",
+				"outputsize": "1",
+				"page":       "2",
+				"dp":         "4",
+			},
+			response: map[string]any{
+				"status": "ok",
+				"result": map[string]any{
+					"count": 1000,
+					"list": []map[string]any{
+						{
+							"symbol":      "IVV",
+							"name":        "iShares Core S&P 500 ETF",
+							"country":     "United States",
+							"mic_code":    "XNAS",
+							"fund_family": "iShares",
+							"fund_type":   "Large Blend",
+						},
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				slice, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected slice, got %T", data)
+				}
+				if len(slice) != 1 {
+					t.Fatalf("expected 1 row, got %d", len(slice))
+				}
+				first, ok := slice[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map row, got %T", slice[0])
+				}
+				if first["symbol"] != "IVV" {
+					t.Fatalf("expected symbol IVV, got %v", first["symbol"])
+				}
+			},
+		},
+		{
+			name: "etfs family",
+			build: func(c *Client) *Request {
+				return c.ETFsFamily(ETFsFamilyParams{Country: "United States"})
+			},
+			expectedPath: "/etfs/family",
+			expected: map[string]string{
+				"country": "United States",
+			},
+			response: map[string]any{
+				"status": "ok",
+				"result": map[string]any{
+					"India": []any{
+						"Aberdeen Standard Fund Managers Limited",
+					},
+					"United States": []any{
+						"Aegon Asset Management UK PLC",
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+				if _, ok := m["United States"]; !ok {
+					t.Fatalf("expected United States key, got %v", m)
+				}
+			},
+		},
+		{
+			name: "etfs type",
+			build: func(c *Client) *Request {
+				return c.ETFsType(ETFsTypeParams{Country: "United States"})
+			},
+			expectedPath: "/etfs/type",
+			expected: map[string]string{
+				"country": "United States",
+			},
+			response: map[string]any{
+				"status": "ok",
+				"result": map[string]any{
+					"Singapore": []any{
+						"Property - Indirect Asia",
+					},
+					"United States": []any{
+						"Large Blend",
+					},
+				},
+			},
+			assert: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+				if _, ok := m["Singapore"]; !ok {
+					t.Fatalf("expected Singapore key, got %v", m)
 				}
 			},
 		},
@@ -2152,6 +2313,119 @@ func TestLastChangesTypedResponse(t *testing.T) {
 	}
 	if response.Data[0].LastChange != "2023-10-14 12:22:48" {
 		t.Fatalf("expected last_change 2023-10-14 12:22:48, got %q", response.Data[0].LastChange)
+	}
+}
+
+func TestETFsListTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result": map[string]any{
+				"count": 1000,
+				"list": []map[string]any{
+					{
+						"symbol":      "IVV",
+						"name":        "iShares Core S&P 500 ETF",
+						"country":     "United States",
+						"mic_code":    "XNAS",
+						"fund_family": "iShares",
+						"fund_type":   "Large Blend",
+					},
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response ETFsListResponse
+	err := client.ETFsList(ETFsListParams{Symbol: "IVV"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if response.Result.Count != 1000 {
+		t.Fatalf("expected count 1000, got %d", response.Result.Count)
+	}
+	if len(response.Result.List) != 1 {
+		t.Fatalf("expected 1 ETF row, got %d", len(response.Result.List))
+	}
+	if response.Result.List[0].Symbol != "IVV" {
+		t.Fatalf("expected symbol IVV, got %q", response.Result.List[0].Symbol)
+	}
+	if response.Result.List[0].FundFamily != "iShares" {
+		t.Fatalf("expected fund_family iShares, got %q", response.Result.List[0].FundFamily)
+	}
+}
+
+func TestETFsFamilyTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result": map[string]any{
+				"India": []string{
+					"Aberdeen Standard Fund Managers Limited",
+				},
+				"United States": []string{
+					"Aegon Asset Management UK PLC",
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response ETFsFamilyResponse
+	err := client.ETFsFamily(ETFsFamilyParams{Country: "United States"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.Result["United States"]) != 1 {
+		t.Fatalf("expected 1 US family, got %d", len(response.Result["United States"]))
+	}
+	if response.Result["United States"][0] != "Aegon Asset Management UK PLC" {
+		t.Fatalf("unexpected family value %q", response.Result["United States"][0])
+	}
+}
+
+func TestETFsTypeTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result": map[string]any{
+				"Singapore": []string{
+					"Property - Indirect Asia",
+				},
+				"United States": []string{
+					"Large Blend",
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response ETFsTypeResponse
+	err := client.ETFsType(ETFsTypeParams{Country: "United States"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.Result["Singapore"]) != 1 {
+		t.Fatalf("expected 1 Singapore type, got %d", len(response.Result["Singapore"]))
+	}
+	if response.Result["Singapore"][0] != "Property - Indirect Asia" {
+		t.Fatalf("unexpected type value %q", response.Result["Singapore"][0])
 	}
 }
 
