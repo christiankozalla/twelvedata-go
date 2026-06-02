@@ -7,12 +7,21 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
+_No unreleased changes._
+
+<!-- AUTO-UNRELEASED:END -->
+
+## [0.6.0] - 2026-06-02
+
+### Added
+- add support for ETFs endpoints and update documentation
+
+## [0.5.0] - 2026-05-01
+
 ### Added
 - support revenue forecasting endpoint
 - support earnings forecasting endpoint
 - support consolidated income_statement endpoint
-
-<!-- AUTO-UNRELEASED:END -->
 
 ## [0.4.0] - 2026-04-25
 
@@ -51,7 +60,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.6.0
+[0.5.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.5.0
 [0.4.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.4.0
 [0.3.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.3.0
 [0.2.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.2.0
