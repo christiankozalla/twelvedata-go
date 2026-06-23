@@ -7,7 +7,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
-_No unreleased changes._
+### Added
+- add earnings endpoint
 
 <!-- AUTO-UNRELEASED:END -->
 
