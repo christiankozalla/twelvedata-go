@@ -260,6 +260,44 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "earnings",
+			build: func(c *Client) *Request {
+				return c.Earnings(EarningsParams{
+					Symbol:     "AAPL",
+					FIGI:       "BBG000B9Y5X2",
+					ISIN:       "US0378331005",
+					CUSIP:      "037833100",
+					Exchange:   "NASDAQ",
+					MICCode:    "XNAS",
+					Country:    "United States",
+					Type:       "Common Stock",
+					Period:     "latest",
+					OutputSize: intPtr(5),
+					Delimiter:  ";",
+					DP:         intPtr(4),
+					StartDate:  "2024-01-01",
+					EndDate:    "2024-12-31",
+				})
+			},
+			expectedPath: "/earnings",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"figi":       "BBG000B9Y5X2",
+				"isin":       "US0378331005",
+				"cusip":      "037833100",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"type":       "Common Stock",
+				"period":     "latest",
+				"outputsize": "5",
+				"delimiter":  ";",
+				"dp":         "4",
+				"start_date": "2024-01-01",
+				"end_date":   "2024-12-31",
+			},
+		},
+		{
 			name: "earnings estimate",
 			build: func(c *Client) *Request {
 				return c.EarningsEstimate(EarningsEstimateParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States"})
@@ -871,6 +909,63 @@ func TestDataEndpointsNormalization(t *testing.T) {
 				}
 				if first["eps_basic"] != 2.11 {
 					t.Fatalf("expected eps_basic 2.11, got %v", first["eps_basic"])
+				}
+			},
+		},
+		{
+			name: "earnings",
+			build: func(c *Client) *Request {
+				return c.Earnings(EarningsParams{Symbol: "AAPL", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States", OutputSize: intPtr(1), DP: intPtr(2)})
+			},
+			expectedPath: "/earnings",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"outputsize": "1",
+				"dp":         "2",
+			},
+			response: map[string]any{
+				"meta": map[string]any{
+					"symbol": "AAPL",
+				},
+				"earnings": []map[string]any{
+					{
+						"date":         "2020-04-30",
+						"time":         "After Hours",
+						"eps_estimate": 2.09,
+						"eps_actual":   2.55,
+						"difference":   0.46,
+						"surprise_prc": 22.01,
+					},
+				},
+				"status": "ok",
+			},
+			assert: func(t *testing.T, data interface{}) {
+				items, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected list, got %T", data)
+				}
+				if len(items) != 1 {
+					t.Fatalf("expected 1 earnings row, got %d", len(items))
+				}
+
+				first, ok := items[0].(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected earnings row map, got %T", items[0])
+				}
+				if first["date"] != "2020-04-30" {
+					t.Fatalf("expected date 2020-04-30, got %v", first["date"])
+				}
+				if first["time"] != "After Hours" {
+					t.Fatalf("expected time After Hours, got %v", first["time"])
+				}
+				if first["eps_actual"] != 2.55 {
+					t.Fatalf("expected eps_actual 2.55, got %v", first["eps_actual"])
+				}
+				if first["surprise_prc"] != 22.01 {
+					t.Fatalf("expected surprise_prc 22.01, got %v", first["surprise_prc"])
 				}
 			},
 		},
@@ -2036,6 +2131,62 @@ func TestStatisticsTypedResponse(t *testing.T) {
 	}
 	if response.Statistics.DividendsAndSplits.DividendFrequency != "Quarterly" {
 		t.Fatalf("expected dividend frequency Quarterly, got %q", response.Statistics.DividendsAndSplits.DividendFrequency)
+	}
+}
+
+func TestEarningsTypedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"meta": map[string]any{
+				"symbol":            "AAPL",
+				"name":              "Apple Inc",
+				"currency":          "USD",
+				"exchange_timezone": "America/New_York",
+				"exchange":          "NASDAQ",
+				"mic_code":          "XNGS",
+			},
+			"earnings": []map[string]any{
+				{
+					"date":         "2020-04-30",
+					"time":         "After Hours",
+					"eps_estimate": 2.09,
+					"eps_actual":   2.55,
+					"difference":   0.46,
+					"surprise_prc": 22.01,
+				},
+			},
+			"status": "ok",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("demo", WithBaseURL(server.URL))
+	var response EarningsResponse
+	err := client.Earnings(EarningsParams{Symbol: "AAPL", Period: "latest"}).AsJSON(context.Background(), &response)
+	if err != nil {
+		t.Fatalf("AsJSON: %v", err)
+	}
+	if response.Meta.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", response.Meta.Symbol)
+	}
+	if response.Status != "ok" {
+		t.Fatalf("expected status ok, got %q", response.Status)
+	}
+	if len(response.Earnings) != 1 {
+		t.Fatalf("expected 1 earnings row, got %d", len(response.Earnings))
+	}
+	if response.Earnings[0].Time != "After Hours" {
+		t.Fatalf("expected time After Hours, got %q", response.Earnings[0].Time)
+	}
+	if response.Earnings[0].EPSEstimate != 2.09 {
+		t.Fatalf("expected eps_estimate 2.09, got %v", response.Earnings[0].EPSEstimate)
+	}
+	if response.Earnings[0].EPSActual != 2.55 {
+		t.Fatalf("expected eps_actual 2.55, got %v", response.Earnings[0].EPSActual)
+	}
+	if response.Earnings[0].SurprisePRC != 22.01 {
+		t.Fatalf("expected surprise_prc 22.01, got %v", response.Earnings[0].SurprisePRC)
 	}
 }
 

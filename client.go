@@ -905,6 +905,72 @@ func (c *Client) Statistics(params StatisticsParams) *Request {
 	return c.newRequest("/statistics", values)
 }
 
+// EarningsParams enumerates filters for /earnings.
+// At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
+type EarningsParams struct {
+	Symbol     string
+	FIGI       string
+	ISIN       string
+	CUSIP      string
+	Exchange   string
+	MICCode    string
+	Country    string
+	Type       string
+	Period     string
+	OutputSize *int
+	Delimiter  string
+	DP         *int
+	StartDate  string
+	EndDate    string
+}
+
+// EarningsResponse captures the /earnings response.
+type EarningsResponse struct {
+	Meta     EarningsMeta    `json:"meta"`
+	Earnings []EarningsValue `json:"earnings"`
+	Status   string          `json:"status,omitempty"`
+}
+
+// EarningsMeta contains general instrument metadata for /earnings.
+type EarningsMeta struct {
+	Symbol           string `json:"symbol,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Currency         string `json:"currency,omitempty"`
+	Exchange         string `json:"exchange,omitempty"`
+	MICCode          string `json:"mic_code,omitempty"`
+	ExchangeTimezone string `json:"exchange_timezone,omitempty"`
+}
+
+// EarningsValue captures one earnings row.
+type EarningsValue struct {
+	Date        string  `json:"date,omitempty"`
+	Time        string  `json:"time,omitempty"`
+	EPSEstimate float64 `json:"eps_estimate,omitempty"`
+	EPSActual   float64 `json:"eps_actual,omitempty"`
+	Difference  float64 `json:"difference,omitempty"`
+	SurprisePRC float64 `json:"surprise_prc,omitempty"`
+}
+
+// Earnings returns the /earnings resource.
+func (c *Client) Earnings(params EarningsParams) *Request {
+	values := url.Values{}
+	addString(values, "symbol", params.Symbol)
+	addString(values, "figi", params.FIGI)
+	addString(values, "isin", params.ISIN)
+	addString(values, "cusip", params.CUSIP)
+	addString(values, "exchange", params.Exchange)
+	addString(values, "mic_code", params.MICCode)
+	addString(values, "country", params.Country)
+	addString(values, "type", params.Type)
+	addString(values, "period", params.Period)
+	addInt(values, "outputsize", params.OutputSize)
+	addString(values, "delimiter", params.Delimiter)
+	addInt(values, "dp", params.DP)
+	addString(values, "start_date", params.StartDate)
+	addString(values, "end_date", params.EndDate)
+	return c.newRequest("/earnings", values)
+}
+
 // EarningsEstimateParams enumerates filters for /earnings_estimate.
 // At least one of Symbol, FIGI, ISIN, or CUSIP is expected by the API.
 type EarningsEstimateParams struct {
