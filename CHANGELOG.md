@@ -7,10 +7,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
+
+<!-- AUTO-UNRELEASED:END -->
+
+## [0.7.0] - 2026-06-23
+
 ### Added
 - add earnings endpoint
 
-<!-- AUTO-UNRELEASED:END -->
 
 ## [0.6.0] - 2026-06-02
 
