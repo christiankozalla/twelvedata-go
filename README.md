@@ -183,9 +183,9 @@ func main() {
 
 ## Error handling
 
-The client returns `*APIError` when Twelve Data reports an API-level error,
-including cases where the HTTP status is `200` but the JSON payload has
-`"status": "error"`.
+The client returns `*APIError` for HTTP error responses and exposes both the
+API error code and HTTP status. Successful responses are passed directly to the
+requested decoder without being inspected for an error payload.
 
 ## Versioning and changelog
 

@@ -21,7 +21,6 @@
 //   - AsNormalizedJSON mirrors the Python client's common normalization rules
 //   - AsCSV returns CSV payloads as text
 //
-// Twelve Data can return logical API errors in JSON bodies even when the HTTP status is 200.
-// The shared transport detects those responses and returns APIError so future endpoints inherit
-// the same behavior automatically.
+// Twelve Data reports API errors through HTTP error status codes. The shared transport converts
+// those responses into APIError so future endpoints inherit the same behavior automatically.
 package twelvedata

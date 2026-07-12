@@ -3,11 +3,33 @@ package twelvedata
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+type readCountingBody struct {
+	reader *strings.Reader
+	reads  int
+}
+
+func (b *readCountingBody) Read(p []byte) (int, error) {
+	b.reads++
+	return b.reader.Read(p)
+}
+
+func (b *readCountingBody) Close() error {
+	return nil
+}
 
 func boolPtr(v bool) *bool {
 	value := v
@@ -2780,7 +2802,7 @@ func TestMinusDITypedResponse(t *testing.T) {
 	}
 }
 
-func TestRequestReturnsAPIErrorFromJSONBody(t *testing.T) {
+func TestRequestDoesNotInspectSuccessfulJSONBodyForErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"error","code":401,"message":"Invalid API key"}`))
@@ -2788,20 +2810,42 @@ func TestRequestReturnsAPIErrorFromJSONBody(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("bad-key", WithBaseURL(server.URL))
-	err := client.Price(PriceParams{Symbol: "AAPL"}).AsJSON(context.Background(), &map[string]any{})
-	if err == nil {
-		t.Fatal("expected APIError, got nil")
+	payload, err := client.Price(PriceParams{Symbol: "AAPL"}).AsRawJSON(context.Background())
+	if err != nil {
+		t.Fatalf("AsRawJSON: %v", err)
 	}
+	if string(payload) != `{"status":"error","code":401,"message":"Invalid API key"}` {
+		t.Fatalf("unexpected payload %q", payload)
+	}
+}
 
-	apiErr, ok := err.(*APIError)
-	if !ok {
-		t.Fatalf("expected *APIError, got %T", err)
+func TestRequestLeavesSuccessfulJSONBodyUnread(t *testing.T) {
+	body := &readCountingBody{reader: strings.NewReader(`{"price":"152.10"}`)}
+	client := NewClient("demo", WithHTTPClient(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       body,
+				Header:     make(http.Header),
+				Request:    req,
+			}, nil
+		}),
+	}))
+
+	resp, err := client.Price(PriceParams{Symbol: "AAPL"}).do(context.Background(), FormatJSON)
+	if err != nil {
+		t.Fatalf("do: %v", err)
 	}
-	if apiErr.Code != 401 {
-		t.Fatalf("expected code 401, got %d", apiErr.Code)
+	defer resp.Body.Close()
+
+	if body.reads != 0 {
+		t.Fatalf("expected body to remain unread, got %d reads", body.reads)
 	}
-	if apiErr.Message != "Invalid API key" {
-		t.Fatalf("expected message Invalid API key, got %q", apiErr.Message)
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		t.Fatalf("read response: %v", err)
+	}
+	if body.reads == 0 {
+		t.Fatal("expected caller to read the response body")
 	}
 }
 
@@ -2828,5 +2872,55 @@ func TestRequestReturnsAPIErrorFromHTTPStatus(t *testing.T) {
 	}
 	if apiErr.Message != "Bad symbol" {
 		t.Fatalf("expected message Bad symbol, got %q", apiErr.Message)
+	}
+}
+
+func TestRequestReturnsAPIErrorFromStandardHTTPStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		code int
+	}{
+		{name: "bad request", code: http.StatusBadRequest},
+		{name: "unauthorized", code: http.StatusUnauthorized},
+		{name: "forbidden", code: http.StatusForbidden},
+		{name: "not found", code: http.StatusNotFound},
+		{name: "request URI too long", code: http.StatusRequestURITooLong},
+		{name: "too many requests", code: http.StatusTooManyRequests},
+		{name: "internal server error", code: http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.code)
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"status":  "error",
+					"code":    tt.code,
+					"message": "standard HTTP error",
+				})
+			}))
+			defer server.Close()
+
+			client := NewClient("demo", WithBaseURL(server.URL))
+			err := client.Price(PriceParams{Symbol: "AAPL"}).AsJSON(context.Background(), &map[string]any{})
+			if err == nil {
+				t.Fatal("expected APIError, got nil")
+			}
+
+			apiErr, ok := err.(*APIError)
+			if !ok {
+				t.Fatalf("expected *APIError, got %T", err)
+			}
+			if apiErr.Code != tt.code {
+				t.Fatalf("expected API code %d, got %d", tt.code, apiErr.Code)
+			}
+			if apiErr.HTTPStatus != tt.code {
+				t.Fatalf("expected HTTP status %d, got %d", tt.code, apiErr.HTTPStatus)
+			}
+			if apiErr.Message != "standard HTTP error" {
+				t.Fatalf("expected message %q, got %q", "standard HTTP error", apiErr.Message)
+			}
+		})
 	}
 }

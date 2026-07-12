@@ -1,7 +1,6 @@
 package twelvedata
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -249,65 +248,37 @@ func (r *Request) do(ctx context.Context, format Format) (*http.Response, error)
 		return nil, err
 	}
 
-	if format != FormatJSON {
-		if resp.StatusCode >= http.StatusBadRequest {
-			defer resp.Body.Close()
-			payload, _ := io.ReadAll(resp.Body)
-			return nil, buildAPIError(resp.StatusCode, payload)
+	if resp.StatusCode >= http.StatusBadRequest {
+		defer resp.Body.Close()
+		payload, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
 		}
-		return resp, nil
+		return nil, buildAPIError(resp.StatusCode, payload)
 	}
-
-	payload, err := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	if err := apiErrorFromPayload(resp.StatusCode, payload); err != nil {
-		return nil, err
-	}
-	resp.Body = io.NopCloser(bytes.NewReader(payload))
 
 	return resp, nil
 }
 
 type apiErrorPayload struct {
-	Status  string `json:"status"`
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-func apiErrorFromPayload(httpStatus int, payload []byte) error {
+func buildAPIError(httpStatus int, payload []byte) error {
 	var apiPayload apiErrorPayload
 	if err := json.Unmarshal(payload, &apiPayload); err == nil {
-		if strings.EqualFold(apiPayload.Status, "error") {
-			code := apiPayload.Code
-			if code == 0 {
-				code = httpStatus
-			}
-			return &APIError{
-				Code:       code,
-				HTTPStatus: httpStatus,
-				Message:    firstNonEmpty(strings.TrimSpace(apiPayload.Message), compactPayload(payload)),
-			}
+		code := apiPayload.Code
+		if code == 0 {
+			code = httpStatus
 		}
-		if httpStatus >= http.StatusBadRequest {
-			return &APIError{
-				Code:       httpStatus,
-				HTTPStatus: httpStatus,
-				Message:    firstNonEmpty(strings.TrimSpace(apiPayload.Message), compactPayload(payload)),
-			}
+		return &APIError{
+			Code:       code,
+			HTTPStatus: httpStatus,
+			Message:    firstNonEmpty(strings.TrimSpace(apiPayload.Message), compactPayload(payload)),
 		}
-		return nil
 	}
 
-	if httpStatus >= http.StatusBadRequest {
-		return buildAPIError(httpStatus, payload)
-	}
-	return nil
-}
-
-func buildAPIError(httpStatus int, payload []byte) error {
 	return &APIError{
 		Code:       httpStatus,
 		HTTPStatus: httpStatus,
