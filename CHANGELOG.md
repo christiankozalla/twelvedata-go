@@ -8,12 +8,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 <!-- AUTO-UNRELEASED:START -->
 
+<!-- AUTO-UNRELEASED:END -->
+
+## [0.9.0] - 2026-07-24
+
 ### Added
 
 - Add typed response models for the `/stocks`, `/etf`, and `/symbol_search` endpoints.
 - Expose the `/quote` response's `last_quote_at` timestamp through `QuoteResponse.LastQuoteAt`.
-
-<!-- AUTO-UNRELEASED:END -->
 
 ## [0.8.0] - 2026-07-12
 
@@ -75,7 +77,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.9.0
 [0.8.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.8.0
 [0.7.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.7.0
 [0.6.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.6.0
