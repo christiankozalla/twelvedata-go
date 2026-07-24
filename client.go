@@ -1273,6 +1273,7 @@ type QuoteResponse struct {
 	Currency       string            `json:"currency,omitempty"`
 	Datetime       string            `json:"datetime,omitempty"`
 	Timestamp      int64             `json:"timestamp,omitempty"`
+	LastQuoteAt    int64             `json:"last_quote_at,omitempty"`
 	Open           string            `json:"open,omitempty"`
 	High           string            `json:"high,omitempty"`
 	Low            string            `json:"low,omitempty"`

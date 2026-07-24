@@ -62,6 +62,10 @@ func main() {
 ## Typed responses
 
 Typed structs are available for the most commonly used endpoints:
+
+- `StocksListResponse`
+- `ETFListResponse`
+- `SymbolSearchResponse`
 - `PriceResponse`
 - `QuoteResponse`
 - `ETFsListResponse`
