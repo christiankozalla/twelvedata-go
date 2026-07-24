@@ -154,8 +154,12 @@ func TestPriceStreamProtocolRoundTrip(t *testing.T) {
 		t.Fatalf("string failure message = %q", status.Fails[0].Message)
 	}
 	if string(status.Fails[1].Code) != "404" ||
-		string(status.Fails[1].Extra["retryable"]) != "false" {
+		status.Fails[1].Retryable == nil ||
+		*status.Fails[1].Retryable {
 		t.Fatalf("unexpected structured failure: %#v", status.Fails[1])
+	}
+	if _, exists := status.Fails[1].Extra["retryable"]; exists {
+		t.Fatalf("typed retryable field leaked into Extra: %#v", status.Fails[1].Extra)
 	}
 	if string(status.Extra["request_id"]) != `"status-1"` {
 		t.Fatalf("status extra request_id = %s", status.Extra["request_id"])

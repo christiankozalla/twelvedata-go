@@ -62,13 +62,14 @@ type SubscriptionInstrument struct {
 // SubscriptionFailure describes a rejected stream subscription. Code remains
 // raw because Twelve Data may represent provider codes as numbers or strings.
 type SubscriptionFailure struct {
-	Symbol   string                     `json:"symbol,omitempty"`
-	Exchange string                     `json:"exchange,omitempty"`
-	Type     string                     `json:"type,omitempty"`
-	MICCode  string                     `json:"mic_code,omitempty"`
-	Message  string                     `json:"message,omitempty"`
-	Code     json.RawMessage            `json:"code,omitempty"`
-	Extra    map[string]json.RawMessage `json:"-"`
+	Symbol    string                     `json:"symbol,omitempty"`
+	Exchange  string                     `json:"exchange,omitempty"`
+	Type      string                     `json:"type,omitempty"`
+	MICCode   string                     `json:"mic_code,omitempty"`
+	Message   string                     `json:"message,omitempty"`
+	Code      json.RawMessage            `json:"code,omitempty"`
+	Retryable *bool                      `json:"retryable,omitempty"`
+	Extra     map[string]json.RawMessage `json:"-"`
 }
 
 // SubscriptionStatus is the acknowledgement for subscribe, unsubscribe, or
@@ -339,7 +340,16 @@ func (f *SubscriptionFailure) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	f.Extra = extraFields(fields, "symbol", "exchange", "type", "mic_code", "message", "code")
+	f.Extra = extraFields(
+		fields,
+		"symbol",
+		"exchange",
+		"type",
+		"mic_code",
+		"message",
+		"code",
+		"retryable",
+	)
 	return nil
 }
 

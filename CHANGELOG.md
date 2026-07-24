@@ -10,6 +10,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 <!-- AUTO-UNRELEASED:END -->
 
+## [0.10.1] - 2026-07-24
+
+### Changed
+
+- Decode subscription failure retryability into a typed field so applications
+  can distinguish permanent instrument rejection from transient provider
+  failures.
+
 ## [0.10.0] - 2026-07-24
 
 ### Added
@@ -86,7 +94,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.10.1
 [0.10.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.10.0
 [0.9.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.9.0
 [0.8.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.8.0
