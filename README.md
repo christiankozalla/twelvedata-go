@@ -1,8 +1,10 @@
 # twelvedata-go
 
-`twelvedata-go` is a read-only Go client for the Twelve Data REST API.
+`twelvedata-go` is a Go client for the Twelve Data REST API and realtime price
+WebSocket.
 
-To consume Twelve Data API from Go with straightforward request builders and typed response structs for common endpoints.
+It provides straightforward REST request builders, typed response structs for
+common endpoints, and a typed realtime price stream.
 
 ## Install
 
@@ -148,6 +150,65 @@ func main() {
 	fmt.Println(series.Meta.Symbol, series.Values[0].Datetime, series.Values[0].Close)
 }
 ```
+
+## Example: Realtime prices
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+
+	td "github.com/christiankozalla/twelvedata-go"
+)
+
+func main() {
+	client := td.NewClient(os.Getenv("TWELVEDATA_API_KEY"))
+	stream, err := client.DialPriceStream(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stream.Close()
+
+	err = stream.Subscribe(context.Background(), []td.PriceStreamSymbol{
+		{Symbol: "AAPL", Exchange: "NASDAQ"},
+		{Symbol: "RY", MICCode: "XNYS"},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		message, err := stream.Read(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		if message.Kind == td.PriceStreamMessagePrice {
+			fmt.Printf(
+				"%s price=%f timestamp=%d\n",
+				message.Price.Symbol,
+				message.Price.Price,
+				message.Price.Timestamp,
+			)
+		}
+	}
+}
+```
+
+The caller owns connection recovery, desired-subscription reconciliation, and
+the recommended heartbeat schedule. Call `Heartbeat` approximately every ten
+seconds, and use `Subscribe`, `Unsubscribe`, or `Reset` to manage the connected
+stream. Control writes are safe for concurrent use; use one reader goroutine
+per stream.
+
+`PriceStreamDecodeError`, `PriceStreamClosedError`,
+`PriceStreamTransportError`, and `PriceStreamDialError` distinguish malformed
+events, peer closure, connected transport failures, and handshake failures.
+Unknown valid event types are returned as `PriceStreamMessageUnknown` with
+their raw JSON preserved.
 
 ## Example: ADX indicator
 
