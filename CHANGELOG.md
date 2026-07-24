@@ -10,6 +10,15 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 <!-- AUTO-UNRELEASED:END -->
 
+## [0.10.0] - 2026-07-24
+
+### Added
+
+- Add a typed realtime price WebSocket stream with compact and extended
+  subscriptions, control actions, status acknowledgements, and price events.
+- Add context-aware cancellation, serialized control writes, typed stream
+  errors, unknown metadata preservation, and fake-server integration tests.
+
 ## [0.9.0] - 2026-07-24
 
 ### Added
@@ -77,7 +86,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.10.0
 [0.9.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.9.0
 [0.8.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.8.0
 [0.7.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.7.0
