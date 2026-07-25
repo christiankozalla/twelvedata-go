@@ -56,7 +56,7 @@ func main() {
 
 - Instrument catalogs: `StocksList`, `StockExchangesList`, `ForexPairsList`, `CryptocurrenciesList`, `ETFList`, `ETFsList`, `ETFsFamily`, `ETFsType`, `IndicesList`, `FundsList`, `BondsList`, `ExchangesList`, `TechnicalIndicatorsList`
 - Discovery: `SymbolSearch`
-- Market data: `ExchangeRate`, `CurrencyConversion`, `Quote`, `Price`, `EOD`, `Logo`, `Profile`, `MarketCap`, `Statistics`, `Earnings`, `EarningsEstimate`, `RevenueEstimate`, `IncomeStatement`, `IncomeStatementConsolidated`, `LastChanges`
+- Market data: `ExchangeRate`, `CurrencyConversion`, `Quote`, `QuoteBatch`, `Price`, `EOD`, `Logo`, `Profile`, `MarketCap`, `Statistics`, `Earnings`, `EarningsEstimate`, `RevenueEstimate`, `IncomeStatement`, `IncomeStatementConsolidated`, `LastChanges`
 - Options: `OptionsExpiration`, `OptionsChain`
 - Momentum indicators: `WILLR`, `ADX`, `PlusDI`, `MinusDI`
 - Time series builder: `TimeSeries`
@@ -70,6 +70,7 @@ Typed structs are available for the most commonly used endpoints:
 - `SymbolSearchResponse`
 - `PriceResponse`
 - `QuoteResponse`
+- `QuoteBatchResponse`
 - `ETFsListResponse`
 - `ETFsFamilyResponse`
 - `ETFsTypeResponse`
@@ -115,6 +116,30 @@ func main() {
 	}
 
 	fmt.Printf("%s open=%s close=%s\n", quote.Symbol, quote.Open, quote.Close)
+}
+```
+
+## Example: Quote batch
+
+```go
+request, err := client.QuoteBatch(td.QuoteBatchParams{
+	Symbols: []string{"AAPL", "TSLA"},
+	MICCode: "XNGS",
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+batch, err := request.AsJSON(context.Background())
+if err != nil {
+	log.Fatal(err)
+}
+for symbol, result := range batch.Items {
+	if result.Error != nil {
+		log.Printf("%s: %v", symbol, result.Error)
+		continue
+	}
+	fmt.Printf("%s close=%s\n", symbol, result.Quote.Close)
 }
 ```
 

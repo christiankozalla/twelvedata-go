@@ -8,6 +8,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 <!-- AUTO-UNRELEASED:START -->
 
+### Added
+
+- Add a typed multi-symbol `/quote` API with deterministic symbol encoding,
+  keyed quote results, isolated per-symbol errors, and missing-item detection.
+
 <!-- AUTO-UNRELEASED:END -->
 
 ## [0.10.1] - 2026-07-24
