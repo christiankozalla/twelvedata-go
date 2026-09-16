@@ -7,11 +7,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 
 <!-- AUTO-UNRELEASED:START -->
-
 ### Added
+- add typed /splits endpoint
 
-- Add a typed multi-symbol `/quote` API with deterministic symbol encoding,
-  keyed quote results, isolated per-symbol errors, and missing-item detection.
+### Chore
+- use go latest
 
 <!-- AUTO-UNRELEASED:END -->
 
@@ -99,7 +99,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - `cmd/tdcli` helper CLI for manual endpoint calls.
 - CI workflow that runs `go test ./...` on pushes and pull requests.
 
-[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/christiankozalla/twelvedata-go/compare/v0.11.0...HEAD
 [0.10.1]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.10.1
 [0.10.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.10.0
 [0.9.0]: https://github.com/christiankozalla/twelvedata-go/releases/tag/v0.9.0
