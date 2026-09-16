@@ -282,6 +282,25 @@ func TestListEndpointsRequests(t *testing.T) {
 			},
 		},
 		{
+			name: "splits",
+			build: func(c *Client) *Request {
+				return c.Splits(SplitsParams{Symbol: "AAPL", FIGI: "BBG000B9Y5X2", ISIN: "US0378331005", CUSIP: "037833100", Exchange: "NASDAQ", MICCode: "XNAS", Country: "United States", Range: "1y", StartDate: "2020-01-01", EndDate: "2020-12-31"})
+			},
+			expectedPath: "/splits",
+			expected: map[string]string{
+				"symbol":     "AAPL",
+				"figi":       "BBG000B9Y5X2",
+				"isin":       "US0378331005",
+				"cusip":      "037833100",
+				"exchange":   "NASDAQ",
+				"mic_code":   "XNAS",
+				"country":    "United States",
+				"range":      "1y",
+				"start_date": "2020-01-01",
+				"end_date":   "2020-12-31",
+			},
+		},
+		{
 			name: "earnings",
 			build: func(c *Client) *Request {
 				return c.Earnings(EarningsParams{
